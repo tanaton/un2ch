@@ -26,32 +26,32 @@ static void *unstr_realloc(void *p, size_t size)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_alloc												*/
-/* –ß‚è’l  Fvoid														*/
-/* ˆø”1   Funstr_t * 			(Šg’£‘ÎÛ)								*/
-/* ˆø”2   Fsize_t				(‘‰Á‚³‚¹‚é—Ê)							*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F•¶š—ñ‚Ìƒoƒbƒtƒ@‚ğŠg’£‚·‚éB								*/
+/* é–¢æ•°å  ï¼šunstr_alloc												*/
+/* æˆ»ã‚Šå€¤  ï¼švoid														*/
+/* å¼•æ•°1   ï¼šunstr_t * 			(æ‹¡å¼µå¯¾è±¡)								*/
+/* å¼•æ•°2   ï¼šsize_t				(å¢—åŠ ã•ã›ã‚‹é‡)							*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šæ–‡å­—åˆ—ã®ãƒãƒƒãƒ•ã‚¡ã‚’æ‹¡å¼µã™ã‚‹ã€‚								*/
 /************************************************************************/
 void unstr_alloc(unstr_t *str, size_t size)
 {
-	/* •p”É‚ÉŠm•Û‚·‚é‚Æ—Ç‚­‚È‚¢‚ç‚µ‚¢‚Ì‚Å‘å‚Ü‚©‚ÉŠm•Û‚·‚é */
+	/* é »ç¹ã«ç¢ºä¿ã™ã‚‹ã¨è‰¯ããªã„ã‚‰ã—ã„ã®ã§å¤§ã¾ã‹ã«ç¢ºä¿ã™ã‚‹ */
 	str->heap += size + UNSTRING_HEAP_SIZE;
 	str->data = unstr_realloc(str->data, str->heap);
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_init													*/
-/* –ß‚è’l  Funstr_t * 													*/
-/* ˆø”1   Fconst char *		(‰Šú‰»•¶š—ñ)							*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  Fˆø”‚Å“n‚³‚ê‚½•¶š—ñ‚ğunstr_t‚Å‰Šú‰»‚·‚éB				*/
+/* é–¢æ•°å  ï¼šunstr_init													*/
+/* æˆ»ã‚Šå€¤  ï¼šunstr_t * 													*/
+/* å¼•æ•°1   ï¼šconst char *		(åˆæœŸåŒ–æ–‡å­—åˆ—)							*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šå¼•æ•°ã§æ¸¡ã•ã‚ŒãŸæ–‡å­—åˆ—ã‚’unstr_tã§åˆæœŸåŒ–ã™ã‚‹ã€‚				*/
 /************************************************************************/
 unstr_t *unstr_init(const char *str)
 {
 	unstr_t *data = unstr_malloc(sizeof(unstr_t));
 	size_t size = strlen(str);
-	/* \0‚ª‚ ‚é‚Ì‚ÅƒTƒCƒY{1‚Åæ“¾Bˆø”‚ÍM—p‚µ‚È‚¢ */
+	/* \0ãŒã‚ã‚‹ã®ã§ã‚µã‚¤ã‚ºï¼‹1ã§å–å¾—ã€‚å¼•æ•°ã¯ä¿¡ç”¨ã—ãªã„ */
 	data->heap = size + 1;
 	data->data = unstr_malloc(data->heap);
 	memcpy(data->data, str, size);
@@ -61,30 +61,30 @@ unstr_t *unstr_init(const char *str)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_init_memory											*/
-/* –ß‚è’l  Funstr_t * 													*/
-/* ˆø”1   Fsize_t				(Šm•Û‚·‚é—Ìˆæ‚ÌƒTƒCƒY)					*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F•¶š—ñ‚Ì—Ìˆæ‚¾‚¯Šm•Û‚µ‚Ä‰Šú‰»‚·‚éB						*/
+/* é–¢æ•°å  ï¼šunstr_init_memory											*/
+/* æˆ»ã‚Šå€¤  ï¼šunstr_t * 													*/
+/* å¼•æ•°1   ï¼šsize_t				(ç¢ºä¿ã™ã‚‹é ˜åŸŸã®ã‚µã‚¤ã‚º)					*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šæ–‡å­—åˆ—ã®é ˜åŸŸã ã‘ç¢ºä¿ã—ã¦åˆæœŸåŒ–ã™ã‚‹ã€‚						*/
 /************************************************************************/
 unstr_t *unstr_init_memory(size_t size)
 {
 	unstr_t *data = unstr_malloc(sizeof(unstr_t));
 	data->heap = size + 1;
 	data->data = unstr_malloc(data->heap);
-	/* ’·‚³0‚Ì•¶š—ñˆµ‚¢ */
+	/* é•·ã•0ã®æ–‡å­—åˆ—æ‰±ã„ */
 	data->data[0] = '\0';
 	data->length = 0;
 	return data;
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_check_heap_size										*/
-/* –ß‚è’l  Fint														*/
-/* ˆø”1   Funstr_t * 			(ŒvZ‚ğs‚¤•¶š—ñ)						*/
-/* ˆø”2   Fsize_t				(Šg’£‚·‚é•¶š—ñ‚Ì’·‚³)					*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F•¶š—ñ‚ğŠg’£‚·‚éÛ‚É—Ìˆæ‚ÌŠm•Û‚ª•K—v‚©ŒvZ‚·‚éB			*/
+/* é–¢æ•°å  ï¼šunstr_check_heap_size										*/
+/* æˆ»ã‚Šå€¤  ï¼šint														*/
+/* å¼•æ•°1   ï¼šunstr_t * 			(è¨ˆç®—ã‚’è¡Œã†æ–‡å­—åˆ—)						*/
+/* å¼•æ•°2   ï¼šsize_t				(æ‹¡å¼µã™ã‚‹æ–‡å­—åˆ—ã®é•·ã•)					*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šæ–‡å­—åˆ—ã‚’æ‹¡å¼µã™ã‚‹éš›ã«é ˜åŸŸã®ç¢ºä¿ãŒå¿…è¦ã‹è¨ˆç®—ã™ã‚‹ã€‚			*/
 /************************************************************************/
 int unstr_check_heap_size(unstr_t *str, size_t size)
 {
@@ -92,11 +92,11 @@ int unstr_check_heap_size(unstr_t *str, size_t size)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_free_func											*/
-/* –ß‚è’l  Fvoid														*/
-/* ˆø”1   Funstr_t * 			(ŠJ•ú‚·‚é•¶š—ñ)						*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F•¶š—ñ‚ğŠJ•ú‚·‚éB											*/
+/* é–¢æ•°å  ï¼šunstr_free_func											*/
+/* æˆ»ã‚Šå€¤  ï¼švoid														*/
+/* å¼•æ•°1   ï¼šunstr_t * 			(é–‹æ”¾ã™ã‚‹æ–‡å­—åˆ—)						*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šæ–‡å­—åˆ—ã‚’é–‹æ”¾ã™ã‚‹ã€‚											*/
 /************************************************************************/
 void unstr_free_func(unstr_t *str)
 {
@@ -107,12 +107,12 @@ void unstr_free_func(unstr_t *str)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_delete												*/
-/* –ß‚è’l  Fvoid														*/
-/* ˆø”1   Fsize_t				(ŠJ•ú‚·‚é•¶š—ñ‚Ì”)					*/
-/* ˆø”2   F...				(ŠJ•ú‚·‚é•¶š—ñ)						*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  Fˆø”‚Å“n‚³‚ê‚½•¶š—ñ‚ğŠJ•ú‚·‚éB							*/
+/* é–¢æ•°å  ï¼šunstr_delete												*/
+/* æˆ»ã‚Šå€¤  ï¼švoid														*/
+/* å¼•æ•°1   ï¼šsize_t				(é–‹æ”¾ã™ã‚‹æ–‡å­—åˆ—ã®æ•°)					*/
+/* å¼•æ•°2   ï¼š...				(é–‹æ”¾ã™ã‚‹æ–‡å­—åˆ—)						*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šå¼•æ•°ã§æ¸¡ã•ã‚ŒãŸæ–‡å­—åˆ—ã‚’é–‹æ”¾ã™ã‚‹ã€‚							*/
 /************************************************************************/
 void unstr_delete(size_t size, ...)
 {
@@ -127,11 +127,11 @@ void unstr_delete(size_t size, ...)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_zero													*/
-/* –ß‚è’l  Fvoid														*/
-/* ˆø”1   Funstr_t * 			(‰Šú‰»‚·‚é•¶š—ñ)						*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F‹ó•¶š—ñ‚Å‰Šú‰»‚·‚éB—Ìˆæ‚ÍŠJ•ú‚µ‚È‚¢B					*/
+/* é–¢æ•°å  ï¼šunstr_zero													*/
+/* æˆ»ã‚Šå€¤  ï¼švoid														*/
+/* å¼•æ•°1   ï¼šunstr_t * 			(åˆæœŸåŒ–ã™ã‚‹æ–‡å­—åˆ—)						*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šç©ºæ–‡å­—åˆ—ã§åˆæœŸåŒ–ã™ã‚‹ã€‚é ˜åŸŸã¯é–‹æ”¾ã—ãªã„ã€‚					*/
 /************************************************************************/
 void unstr_zero(unstr_t *str)
 {
@@ -142,11 +142,11 @@ void unstr_zero(unstr_t *str)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_copy													*/
-/* –ß‚è’l  Funstr_t * 													*/
-/* ˆø”1   Funstr_t * 			(‘ÎÛ•¶š—ñ)							*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F•¶š—ñ‚ğƒRƒs[‚·‚éB—Ìˆæ‚ÌƒTƒCƒY‚àƒRƒs[‚·‚éB				*/
+/* é–¢æ•°å  ï¼šunstr_copy													*/
+/* æˆ»ã‚Šå€¤  ï¼šunstr_t * 													*/
+/* å¼•æ•°1   ï¼šunstr_t * 			(å¯¾è±¡æ–‡å­—åˆ—)							*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šæ–‡å­—åˆ—ã‚’ã‚³ãƒ”ãƒ¼ã™ã‚‹ã€‚é ˜åŸŸã®ã‚µã‚¤ã‚ºã‚‚ã‚³ãƒ”ãƒ¼ã™ã‚‹ã€‚				*/
 /************************************************************************/
 unstr_t *unstr_copy(unstr_t *str)
 {
@@ -160,14 +160,14 @@ unstr_t *unstr_copy(unstr_t *str)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_substr												*/
-/* –ß‚è’l  Funstr_t * 													*/
-/* ˆø”1   Funstr_t * 			(ƒRƒs[æ)								*/
-/* ˆø”2   Funstr_t * 			(ƒRƒs[Œ³)								*/
-/* ˆø”3   Fsize_t				(ƒRƒs[‚·‚é’·‚³)						*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  Fˆø”1‚Éˆø”2‚ğˆø”3‚ÌƒTƒCƒY‚¾‚¯ƒRƒs[‚·‚éB				*/
-/*			 •¶š—ñ‚Ìæ“ª‚©‚çæ“ª‚ÖƒRƒs[‚·‚éB							*/
+/* é–¢æ•°å  ï¼šunstr_substr												*/
+/* æˆ»ã‚Šå€¤  ï¼šunstr_t * 													*/
+/* å¼•æ•°1   ï¼šunstr_t * 			(ã‚³ãƒ”ãƒ¼å…ˆ)								*/
+/* å¼•æ•°2   ï¼šunstr_t * 			(ã‚³ãƒ”ãƒ¼å…ƒ)								*/
+/* å¼•æ•°3   ï¼šsize_t				(ã‚³ãƒ”ãƒ¼ã™ã‚‹é•·ã•)						*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šå¼•æ•°1ã«å¼•æ•°2ã‚’å¼•æ•°3ã®ã‚µã‚¤ã‚ºã ã‘ã‚³ãƒ”ãƒ¼ã™ã‚‹ã€‚				*/
+/*			 æ–‡å­—åˆ—ã®å…ˆé ­ã‹ã‚‰å…ˆé ­ã¸ã‚³ãƒ”ãƒ¼ã™ã‚‹ã€‚							*/
 /************************************************************************/
 unstr_t *unstr_substr(unstr_t *s1, unstr_t *s2, size_t len)
 {
@@ -190,12 +190,12 @@ unstr_t *unstr_substr(unstr_t *s1, unstr_t *s2, size_t len)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_substr_char											*/
-/* –ß‚è’l  Funstr_t * 													*/
-/* ˆø”1   Fconst char *		(‘ÎÛ•¶š—ñ)							*/
-/* ˆø”2   Fsize_t				(ƒRƒs[‚·‚é’·‚³)						*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F•¶š—ñ‚ğw’è‚µ‚½’·‚³‚ÅØ‚èo‚µAunstr_tŒ^‚Å‰Šú‰»‚·‚éB	*/
+/* é–¢æ•°å  ï¼šunstr_substr_char											*/
+/* æˆ»ã‚Šå€¤  ï¼šunstr_t * 													*/
+/* å¼•æ•°1   ï¼šconst char *		(å¯¾è±¡æ–‡å­—åˆ—)							*/
+/* å¼•æ•°2   ï¼šsize_t				(ã‚³ãƒ”ãƒ¼ã™ã‚‹é•·ã•)						*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šæ–‡å­—åˆ—ã‚’æŒ‡å®šã—ãŸé•·ã•ã§åˆ‡ã‚Šå‡ºã—ã€unstr_tå‹ã§åˆæœŸåŒ–ã™ã‚‹ã€‚	*/
 /************************************************************************/
 unstr_t *unstr_substr_char(const char *str, size_t len)
 {
@@ -213,12 +213,12 @@ unstr_t *unstr_substr_char(const char *str, size_t len)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_strcat												*/
-/* –ß‚è’l  Funstr_t *													*/
-/* ˆø”1   Funstr_t *			(Œ‹‡æ•¶š—ñ)							*/
-/* ˆø”2   Funstr_t *			(Œ‹‡•¶š—ñ)							*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F•¶š—ñ‚ğŒ‹‡‚µA•Ô‚·B										*/
+/* é–¢æ•°å  ï¼šunstr_strcat												*/
+/* æˆ»ã‚Šå€¤  ï¼šunstr_t *													*/
+/* å¼•æ•°1   ï¼šunstr_t *			(çµåˆå…ˆæ–‡å­—åˆ—)							*/
+/* å¼•æ•°2   ï¼šunstr_t *			(çµåˆæ–‡å­—åˆ—)							*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šæ–‡å­—åˆ—ã‚’çµåˆã—ã€è¿”ã™ã€‚										*/
 /************************************************************************/
 unstr_t *unstr_strcat(unstr_t *s1, unstr_t *s2)
 {
@@ -233,12 +233,12 @@ unstr_t *unstr_strcat(unstr_t *s1, unstr_t *s2)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_strcat_char											*/
-/* –ß‚è’l  Funstr_t *													*/
-/* ˆø”1   Funstr_t *			(Œ‹‡æ•¶š—ñ)							*/
-/* ˆø”2   Fconst char *		(Œ‹‡•¶š—ñ)							*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  Funstr_tŒ^‚ÉcharŒ^•¶š—ñ‚ğŒ‹‡‚·‚éB						*/
+/* é–¢æ•°å  ï¼šunstr_strcat_char											*/
+/* æˆ»ã‚Šå€¤  ï¼šunstr_t *													*/
+/* å¼•æ•°1   ï¼šunstr_t *			(çµåˆå…ˆæ–‡å­—åˆ—)							*/
+/* å¼•æ•°2   ï¼šconst char *		(çµåˆæ–‡å­—åˆ—)							*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šunstr_tå‹ã«charå‹æ–‡å­—åˆ—ã‚’çµåˆã™ã‚‹ã€‚						*/
 /************************************************************************/
 unstr_t *unstr_strcat_char(unstr_t *str, const char *c)
 {
@@ -246,7 +246,7 @@ unstr_t *unstr_strcat_char(unstr_t *str, const char *c)
 	if(unstr_check_heap_size(str, size + 1)){
 		unstr_alloc(str, size);
 	}
-	/* \0‚Ü‚ÅƒRƒs[‚·‚é */
+	/* \0ã¾ã§ã‚³ãƒ”ãƒ¼ã™ã‚‹ */
 	memcpy(&(str->data[str->length]), c, size);
 	str->length += size;
 	str->data[str->length] = '\0';
@@ -254,12 +254,12 @@ unstr_t *unstr_strcat_char(unstr_t *str, const char *c)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_strcmp												*/
-/* –ß‚è’l  Funstr_t *													*/
-/* ˆø”1   Funstr_t *			(”äŠr•¶š—ñ1)							*/
-/* ˆø”2   Funstr_t *			(”äŠr•¶š—ñ2)							*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F•¶š—ñ”äŠr‚ğs‚¤B											*/
+/* é–¢æ•°å  ï¼šunstr_strcmp												*/
+/* æˆ»ã‚Šå€¤  ï¼šunstr_t *													*/
+/* å¼•æ•°1   ï¼šunstr_t *			(æ¯”è¼ƒæ–‡å­—åˆ—1)							*/
+/* å¼•æ•°2   ï¼šunstr_t *			(æ¯”è¼ƒæ–‡å­—åˆ—2)							*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šæ–‡å­—åˆ—æ¯”è¼ƒã‚’è¡Œã†ã€‚											*/
 /************************************************************************/
 int unstr_strcmp(unstr_t *str1, unstr_t *str2)
 {
@@ -267,13 +267,13 @@ int unstr_strcmp(unstr_t *str1, unstr_t *str2)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_split												*/
-/* –ß‚è’l  Funstr_t *													*/
-/* ˆø”1   Funstr_t *			(Ši”[æ)								*/
-/* ˆø”2   Fconst char *		(‘ÎÛ•¶š—ñ)							*/
-/* ˆø”3   Fchar 				(‹æØ‚è•¶š)							*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F‘ÎÛ•¶š—ñ‚ğ‹æØ‚è•¶š‚ÅØ‚èAŠi”[æ‚ÉŠi”[‚·‚éB			*/
+/* é–¢æ•°å  ï¼šunstr_split												*/
+/* æˆ»ã‚Šå€¤  ï¼šunstr_t *													*/
+/* å¼•æ•°1   ï¼šunstr_t *			(æ ¼ç´å…ˆ)								*/
+/* å¼•æ•°2   ï¼šconst char *		(å¯¾è±¡æ–‡å­—åˆ—)							*/
+/* å¼•æ•°3   ï¼šchar 				(åŒºåˆ‡ã‚Šæ–‡å­—)							*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šå¯¾è±¡æ–‡å­—åˆ—ã‚’åŒºåˆ‡ã‚Šæ–‡å­—ã§åˆ‡ã‚Šã€æ ¼ç´å…ˆã«æ ¼ç´ã™ã‚‹ã€‚			*/
 /************************************************************************/
 unstr_t *unstr_split(unstr_t *str, const char *tmp, char c)
 {
@@ -291,13 +291,13 @@ unstr_t *unstr_split(unstr_t *str, const char *tmp, char c)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_sprintf												*/
-/* –ß‚è’l  Funstr_t *													*/
-/* ˆø”1   Funstr_t *			(Ši”[æ)								*/
-/* ˆø”2   Fconst char *		(ƒtƒH[ƒ}ƒbƒg)							*/
-/* ˆø”3   F... 				(‰Â•Ïˆø”)								*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F©“®Šg’£‹@”\•t‚«sprintfB×‚©‚¢ƒtƒH[ƒ}ƒbƒg‚É‚Í–¢‘Î‰B	*/
+/* é–¢æ•°å  ï¼šunstr_sprintf												*/
+/* æˆ»ã‚Šå€¤  ï¼šunstr_t *													*/
+/* å¼•æ•°1   ï¼šunstr_t *			(æ ¼ç´å…ˆ)								*/
+/* å¼•æ•°2   ï¼šconst char *		(ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆ)							*/
+/* å¼•æ•°3   ï¼š... 				(å¯å¤‰å¼•æ•°)								*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šè‡ªå‹•æ‹¡å¼µæ©Ÿèƒ½ä»˜ãsprintfã€‚ç´°ã‹ã„ãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆã«ã¯æœªå¯¾å¿œã€‚	*/
 /************************************************************************/
 unstr_t *unstr_sprintf(unstr_t *str, const char *format, ...)
 {
@@ -363,11 +363,11 @@ unstr_t *unstr_sprintf(unstr_t *str, const char *format, ...)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_reverse												*/
-/* –ß‚è’l  Funstr_t *													*/
-/* ˆø”1   Funstr_t *			(‘ÎÛ•¶š—ñ)							*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F•¶š—ñ‚ğ”½“]‚³‚¹‚éB										*/
+/* é–¢æ•°å  ï¼šunstr_reverse												*/
+/* æˆ»ã‚Šå€¤  ï¼šunstr_t *													*/
+/* å¼•æ•°1   ï¼šunstr_t *			(å¯¾è±¡æ–‡å­—åˆ—)							*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šæ–‡å­—åˆ—ã‚’åè»¢ã•ã›ã‚‹ã€‚										*/
 /************************************************************************/
 unstr_t *unstr_reverse(unstr_t *str)
 {
@@ -384,13 +384,13 @@ unstr_t *unstr_reverse(unstr_t *str)
 }
 
 /************************************************************************/
-/* ŠÖ”–¼  Funstr_itoa													*/
-/* –ß‚è’l  Funstr_t *													*/
-/* ˆø”1   Fint				(‘ÎÛ”’l)								*/
-/* ˆø”2   Fint				(Šî”)									*/
-/* ˆø”3   Fint				(Šî”2)									*/
-/* ƒAƒNƒZƒXFpublic														*/
-/* “®  ì  F”’l‚©‚ç•¶š—ñ‚ğì¬‚·‚éB									*/
+/* é–¢æ•°å  ï¼šunstr_itoa													*/
+/* æˆ»ã‚Šå€¤  ï¼šunstr_t *													*/
+/* å¼•æ•°1   ï¼šint				(å¯¾è±¡æ•°å€¤)								*/
+/* å¼•æ•°2   ï¼šint				(åŸºæ•°)									*/
+/* å¼•æ•°3   ï¼šint				(åŸºæ•°2)									*/
+/* ã‚¢ã‚¯ã‚»ã‚¹ï¼špublic														*/
+/* å‹•  ä½œ  ï¼šæ•°å€¤ã‹ã‚‰æ–‡å­—åˆ—ã‚’ä½œæˆã™ã‚‹ã€‚									*/
 /************************************************************************/
 unstr_t *unstr_itoa(int num, int kisu, int moji)
 {
@@ -416,11 +416,11 @@ unstr_t *unstr_itoa(int num, int kisu, int moji)
 	return unstr_reverse(str);
 }
 
-/* data‚©‚çformat’Ê‚è‚É•¶š—ñ‚ğØ‚èo‚µAunstr_tŒ^‚ÉŠi”[‚·‚éB
- * ‘Î‰ƒtƒH[ƒ}ƒbƒg‚Íu$v‚Ì‚İ
- * "abcdefg"‚©‚ç"cd"‚Æ"fg"‚ğ”²‚«o‚µ‚½‚¢ê‡A"ab$e$"‚Æ‘‚­
- * u$$v‚Æ‘‚¯‚Îu$v‚ğ‹æØ‚è•¶š‚Éo—ˆ‚é
- * æ“¾‚µ‚½•¶š—ñ‚Ì”‚ğ•Ô‚·Bã‹L‚Ìê‡‚Íu2v‚ğ•Ô‚·
+/* dataã‹ã‚‰formaté€šã‚Šã«æ–‡å­—åˆ—ã‚’åˆ‡ã‚Šå‡ºã—ã€unstr_tå‹ã«æ ¼ç´ã™ã‚‹ã€‚
+ * å¯¾å¿œãƒ•ã‚©ãƒ¼ãƒãƒƒãƒˆã¯ã€Œ$ã€ã®ã¿
+ * "abcdefg"ã‹ã‚‰"cd"ã¨"fg"ã‚’æŠœãå‡ºã—ãŸã„å ´åˆã€"ab$e$"ã¨æ›¸ã
+ * ã€Œ$$ã€ã¨æ›¸ã‘ã°ã€Œ$ã€ã‚’åŒºåˆ‡ã‚Šæ–‡å­—ã«å‡ºæ¥ã‚‹
+ * å–å¾—ã—ãŸæ–‡å­—åˆ—ã®æ•°ã‚’è¿”ã™ã€‚ä¸Šè¨˜ã®å ´åˆã¯ã€Œ2ã€ã‚’è¿”ã™
  */
 size_t unstr_sscanf(unstr_t *data, const char *format, ...)
 {
@@ -435,7 +435,7 @@ size_t unstr_sscanf(unstr_t *data, const char *format, ...)
 	if(data == NULL || data->data == NULL) return 0;
 	search = unstr_init_memory(UNSTRING_HEAP_SIZE);
 	va_start(list, format);
-	/* æ“ª‚ğ’Tõ‚·‚é */
+	/* å…ˆé ­ã‚’æ¢ç´¢ã™ã‚‹ */
 	if((*format != '$') && (*format != '\0')){
 		do {
 			if(unstr_check_heap_size(search, 1)){
@@ -456,7 +456,7 @@ size_t unstr_sscanf(unstr_t *data, const char *format, ...)
 		if(*format++ != '$') continue;
 		str = va_arg(list, unstr_t *);
 		unstr_zero(search);
-		/* ŒŸõ•¶š—ñ‚ğ\’z */
+		/* æ¤œç´¢æ–‡å­—åˆ—ã‚’æ§‹ç¯‰ */
 		if(*format == '\0'){
 			steady = strlen(tmp);
 		} else {
@@ -469,13 +469,13 @@ size_t unstr_sscanf(unstr_t *data, const char *format, ...)
 				search->data[search->length++] = *format++;
 			} while((*format != '$') && (*format != '\0'));
 			search->data[search->length] = '\0';
-			/* ŒŸõ */
+			/* æ¤œç´¢ */
 			index = strstr(tmp, search->data);
 			if(index == NULL){
 				steady = strlen(tmp);
 				format += strlen(format);
 			} else {
-				/* ·•ª‚ğ”’l‰» */
+				/* å·®åˆ†ã‚’æ•°å€¤åŒ– */
 				steady = (size_t)(index - tmp);
 			}
 		}
@@ -491,7 +491,7 @@ size_t unstr_sscanf(unstr_t *data, const char *format, ...)
 				count++;
 			}
 		}
-		/* ƒ|ƒCƒ“ƒ^‚ği‚ß‚é */
+		/* ãƒã‚¤ãƒ³ã‚¿ã‚’é€²ã‚ã‚‹ */
 		tmp += steady + search->length;
 	}
 	va_end(list);
@@ -499,7 +499,7 @@ size_t unstr_sscanf(unstr_t *data, const char *format, ...)
 	return count;
 }
 
-/* ƒtƒ@ƒCƒ‹æ“¾ */
+/* ãƒ•ã‚¡ã‚¤ãƒ«å–å¾— */
 unstr_t *unstr_file_get_contents(unstr_t *filename)
 {
 	FILE *fp = fopen(filename->data, "r");
@@ -508,27 +508,27 @@ unstr_t *unstr_file_get_contents(unstr_t *filename)
 	size_t getsize = 0;
 
 	if(!fp) return NULL;
-	/* ƒtƒ@ƒCƒ‹ƒTƒCƒY‚ğ‹‚ß‚é */
-	/* ƒtƒ@ƒCƒ‹ƒ|ƒCƒ“ƒ^‚ğÅŒã‚Ü‚ÅˆÚ“® */
+	/* ãƒ•ã‚¡ã‚¤ãƒ«ã‚µã‚¤ã‚ºã‚’æ±‚ã‚ã‚‹ */
+	/* ãƒ•ã‚¡ã‚¤ãƒ«ãƒã‚¤ãƒ³ã‚¿ã‚’æœ€å¾Œã¾ã§ç§»å‹• */
 	fseek(fp, 0, SEEK_END);
 	size = ftell(fp);
-	/* ƒtƒ@ƒCƒ‹ƒ|ƒCƒ“ƒ^‚ğæ“ª‚É–ß‚· */
+	/* ãƒ•ã‚¡ã‚¤ãƒ«ãƒã‚¤ãƒ³ã‚¿ã‚’å…ˆé ­ã«æˆ»ã™ */
 	rewind(fp);
 
-	/* ƒtƒ@ƒCƒ‹ƒTƒCƒY•ª‚Ì—Ìˆæ‚ğŠm•Û */
+	/* ãƒ•ã‚¡ã‚¤ãƒ«ã‚µã‚¤ã‚ºåˆ†ã®é ˜åŸŸã‚’ç¢ºä¿ */
 	str = unstr_init_memory((size_t)size + 1);
 
-	/* “Ç‚İ‚İ */
+	/* èª­ã¿è¾¼ã¿ */
 	getsize = fread(str->data, 1, (size_t)size, fp);
 	str->data[getsize] = '\0';
 	str->length = getsize;
 
-	/* ƒtƒ@ƒCƒ‹ƒ|ƒCƒ“ƒ^‚ğƒNƒ[ƒYI */
+	/* ãƒ•ã‚¡ã‚¤ãƒ«ãƒã‚¤ãƒ³ã‚¿ã‚’ã‚¯ãƒ­ãƒ¼ã‚ºï¼ */
 	fclose(fp);
 	return str;
 }
 
-/* ƒtƒ@ƒCƒ‹‘‚«‚İ */
+/* ãƒ•ã‚¡ã‚¤ãƒ«æ›¸ãè¾¼ã¿ */
 void unstr_file_put_contents(unstr_t *filename, unstr_t *data, const char *mode)
 {
 	FILE *fp = fopen(filename->data, mode);
@@ -538,7 +538,7 @@ void unstr_file_put_contents(unstr_t *filename, unstr_t *data, const char *mode)
 	fclose(fp);
 }
 
-/* ’uŠ·‚·‚é */
+/* ç½®æ›ã™ã‚‹ */
 unstr_t *unstr_replace(unstr_t *data, unstr_t *search, unstr_t *replace)
 {
 	unstr_t *string = 0;
@@ -563,7 +563,7 @@ unstr_t *unstr_replace(unstr_t *data, unstr_t *search, unstr_t *replace)
 	return string;
 }
 
-/* ƒNƒCƒbƒNƒT[ƒ` */
+/* ã‚¯ã‚¤ãƒƒã‚¯ã‚µãƒ¼ãƒ */
 size_t* unstr_quick_search(unstr_t *text, unstr_t *search, size_t *size)
 {
 	unsigned char *x = (unsigned char *)search->data;
@@ -574,7 +574,7 @@ size_t* unstr_quick_search(unstr_t *text, unstr_t *search, size_t *size)
 	size_t count = 0;
 	size_t table[256] = {0};
 
-	// ‰Šú‰»
+	// åˆæœŸåŒ–
 	size_t *array = unstr_malloc(16 * sizeof(size_t));
 
 	for(j = 0; j < 256; ++j){

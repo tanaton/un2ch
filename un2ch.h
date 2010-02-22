@@ -6,15 +6,15 @@
 #include <stdbool.h>
 #include "unstring.h"
 
-/* ”Âƒf[ƒ^•Û‘¶ƒpƒX */
+/* æ¿ãƒ‡ãƒ¼ã‚¿ä¿å­˜ãƒ‘ã‚¹ */
 #define UN_BBS_DATA_FILENAME		"/virtual/unkar/ita.data"
-/* ”Âƒf[ƒ^ƒ}ƒXƒ^[URL */
+/* æ¿ãƒ‡ãƒ¼ã‚¿ãƒã‚¹ã‚¿ãƒ¼URL */
 #define UN_BBS_DATA_URL				"http://menu.2ch.net/bbsmenu.html"
-/* ƒo[ƒWƒ‡ƒ“ */
+/* ãƒãƒ¼ã‚¸ãƒ§ãƒ³ */
 #define UN_VERSION					"Monazilla/1.00 (un2ch/0.0.1)"
-/* dat•ÛŠÇƒtƒHƒ‹ƒ_–¼ */
+/* datä¿ç®¡ãƒ•ã‚©ãƒ«ãƒ€å */
 #define UN_DAT_SAVE_FOLDER			"/virtual/unkar/public_html/2ch/dat"
-/* SETTING.txtƒLƒƒƒbƒVƒ…•âŠ® */
+/* SETTING.txtã‚­ãƒ£ãƒƒã‚·ãƒ¥è£œå®Œ */
 #define UN_BOARD_SETTING_FILENAME	"setting.txt"
 
 #define UN_CHAR_LENGTH				256
@@ -25,14 +25,14 @@
 #define UN_THREAD_NUMBER_LENGTH		11
 #define UN_TCP_IP_FRAME_SIZE		40960
 
-/* “®ìƒ‚[ƒh */
+/* å‹•ä½œãƒ¢ãƒ¼ãƒ‰ */
 typedef enum {
 	UN_MODE_SERVER = 1,
 	UN_MODE_BOARD,
 	UN_MODE_THREAD
 } un_mode_t;
 
-/* ƒƒbƒZ[ƒW */
+/* ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ */
 typedef enum {
 	UN_MESSAGE_SACCESS = 0,
 	UN_MESSAGE_NOSERVER,
@@ -40,7 +40,7 @@ typedef enum {
 	UN_MESSAGE_BOURBON
 } un_message_t;
 
-/* ƒLƒƒƒbƒVƒ…ƒ‚[ƒh */
+/* ã‚­ãƒ£ãƒƒã‚·ãƒ¥ãƒ¢ãƒ¼ãƒ‰ */
 typedef enum {
 	UN_CACHE_FOLDER = 1,
 	UN_CACHE_EDIT,
@@ -48,9 +48,9 @@ typedef enum {
 } un_cache_t;
 
 typedef struct un2ch_st {
-	size_t byte;						/* dat‚Ìƒf[ƒ^ƒTƒCƒY */
-	time_t mod;							/* dat‚ÌÅIXVŠÔ */
-	long code;							/* HTTPƒXƒe[ƒ^ƒXƒR[ƒh */
+	size_t byte;						/* datã®ãƒ‡ãƒ¼ã‚¿ã‚µã‚¤ã‚º */
+	time_t mod;							/* datã®æœ€çµ‚æ›´æ–°æ™‚é–“ */
+	long code;							/* HTTPã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ã‚³ãƒ¼ãƒ‰ */
 	unstr_t *server;
 	unstr_t *board;
 	unstr_t *thread;
