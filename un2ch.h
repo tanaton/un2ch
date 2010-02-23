@@ -7,13 +7,14 @@
 #include "unstring.h"
 
 /* 板データ保存パス */
-#define UN_BBS_DATA_FILENAME		"/virtual/unkar/ita.data"
+#define UN_BBS_DATA_FILENAME		"/2ch/dat/ita.data"
 /* 板データマスターURL */
 #define UN_BBS_DATA_URL				"http://menu.2ch.net/bbsmenu.html"
 /* バージョン */
 #define UN_VERSION					"Monazilla/1.00 (un2ch/0.0.1)"
 /* dat保管フォルダ名 */
-#define UN_DAT_SAVE_FOLDER			"/virtual/unkar/public_html/2ch/dat"
+#define UN_DAT_SAVE_FOLDER			"/2ch/dat"
+#define UN_BOARD_SUBJECT_FILENAME	"subject.txt"
 /* SETTING.txtキャッシュ補完 */
 #define UN_BOARD_SETTING_FILENAME	"setting.txt"
 
@@ -27,7 +28,8 @@
 
 /* 動作モード */
 typedef enum {
-	UN_MODE_SERVER = 1,
+	UN_MODE_NOTING = 0,
+	UN_MODE_SERVER,
 	UN_MODE_BOARD,
 	UN_MODE_THREAD
 } un_mode_t;
@@ -51,19 +53,25 @@ typedef struct un2ch_st {
 	size_t byte;						/* datのデータサイズ */
 	time_t mod;							/* datの最終更新時間 */
 	long code;							/* HTTPステータスコード */
+	unstr_t *folder;
+	unstr_t *board_list;
+	unstr_t *board_subject;
+	unstr_t *board_setting;
+	unstr_t *logfile;
 	unstr_t *server;
 	unstr_t *board;
 	unstr_t *thread;
 	unstr_t *thread_index;
 	unstr_t *thread_number;
 	unstr_t *error;
-	unstr_t *folder;
-	unstr_t *bbspath;
-	unstr_t *logfile;
 	un_mode_t mode;
 	bool bourbon;
 } un2ch_t;
 
+bool un2ch_set_folder(un2ch_t *init, const char *str);
+bool un2ch_set_board_list(un2ch_t *init, const char *str);
+bool un2ch_set_board_subject(un2ch_t *init, const char *str);
+bool un2ch_set_board_setting(un2ch_t *init, const char *str);
 un2ch_t* un2ch_init(void);
 void un2ch_free(un2ch_t *init);
 un_message_t un2ch_set_info(un2ch_t *init, unstr_t *server, unstr_t *board, unstr_t *thread);

@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 #include "unstring.h"
 
 static void *unstr_malloc(size_t size);
 static void *unstr_realloc(void *p, size_t size);
+static bool unstr_check_heap_size(unstr_t *str, size_t size);
 
 static void *unstr_malloc(size_t size)
 {
@@ -80,15 +82,15 @@ unstr_t *unstr_init_memory(size_t size)
 
 /************************************************************************/
 /* 関数名  ：unstr_check_heap_size										*/
-/* 戻り値  ：int														*/
+/* 戻り値  ：bool														*/
 /* 引数1   ：unstr_t * 			(計算を行う文字列)						*/
 /* 引数2   ：size_t				(拡張する文字列の長さ)					*/
 /* アクセス：public														*/
 /* 動  作  ：文字列を拡張する際に領域の確保が必要か計算する。			*/
 /************************************************************************/
-int unstr_check_heap_size(unstr_t *str, size_t size)
+static bool unstr_check_heap_size(unstr_t *str, size_t size)
 {
-	return (((str->length + size) >= str->heap) ? 1 : 0);
+	return (((str->length + size) >= str->heap) ? true : false);
 }
 
 /************************************************************************/
@@ -144,19 +146,46 @@ void unstr_zero(unstr_t *str)
 /************************************************************************/
 /* 関数名  ：unstr_copy													*/
 /* 戻り値  ：unstr_t * 													*/
-/* 引数1   ：unstr_t * 			(対象文字列)							*/
+/* 引数1   ：unstr_t * 			(コピー先)								*/
+/* 引数2   ：unstr_t * 			(コピー元)								*/
 /* アクセス：public														*/
-/* 動  作  ：文字列をコピーする。領域のサイズもコピーする。				*/
+/* 動  作  ：文字列をコピーする。										*/
 /************************************************************************/
-unstr_t *unstr_copy(unstr_t *str)
+unstr_t *unstr_copy(unstr_t *s1, unstr_t *s2)
 {
-	unstr_t *data = unstr_malloc(sizeof(unstr_t));
-	data->heap = str->heap;
-	data->data = unstr_malloc(str->heap);
-	memcpy(data->data, str->data, str->length);
-	data->length = str->length;
-	data->data[str->length] = '\0';
-	return data;
+	if(!s2) return NULL;
+	if(s1){
+		unstr_zero(s1);
+		if(unstr_check_heap_size(s1, s2->length + 1)){
+			unstr_alloc(s1, ((s1->length + s2->length) - s1->heap) + 2);
+		}
+	} else {
+		s1 = unstr_malloc(sizeof(unstr_t));
+		s1->heap = s2->heap;
+		s1->data = unstr_malloc(s2->heap);
+	}
+	memcpy(s1->data, s2->data, s2->length);
+	s1->length = s2->length;
+	s1->data[s2->length] = '\0';
+	return s1;
+}
+
+/************************************************************************/
+/* 関数名  ：unstr_copy_char											*/
+/* 戻り値  ：unstr_t * 													*/
+/* 引数1   ：unstr_t * 			(コピー先)								*/
+/* 引数2   ：const char * 		(コピー元)								*/
+/* アクセス：public														*/
+/* 動  作  ：文字列をコピーする。										*/
+/************************************************************************/
+unstr_t *unstr_copy_char(unstr_t *s1, const char *s2)
+{
+	unstr_t *str = 0;
+	if(!s2) return NULL;
+	str = unstr_init(s2);
+	unstr_copy(s1, str);
+	unstr_free(str);
+	return s1;
 }
 
 /************************************************************************/
@@ -600,5 +629,31 @@ size_t* unstr_quick_search(unstr_t *text, unstr_t *search, size_t *size)
 	}
 	*size = count;
 	return array;
+}
+
+/* strtokマルチスレッド対応 */
+/* strtokと微妙に仕様が違う */
+unstr_t* unstr_strtok(unstr_t *str, const char *delim, size_t *index)
+{
+	unstr_t *data = 0;
+	char *p = 0;
+	char *ptr = 0;
+	size_t len = 0;
+	size_t i = 0;
+	if(index == NULL) return NULL;
+	if((*index) > str->length) return NULL;
+	ptr = str->data + (*index);
+	p = strstr(ptr, delim);
+	if(p){
+		len = strlen(delim);
+		for(i = 0; i < len; i++){
+			p[i] = '\0';
+		}
+		*index += (size_t)(p - ptr) + len;
+	} else {
+		*index = str->length + 1;
+	}
+	data = unstr_init(ptr);
+	return data;
 }
 

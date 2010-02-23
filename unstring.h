@@ -19,11 +19,11 @@ typedef struct unstr_st {
 void unstr_alloc(unstr_t *str, size_t size);
 unstr_t *unstr_init(const char *str);
 unstr_t *unstr_init_memory(size_t size);
-int unstr_check_heap_size(unstr_t *str, size_t size);
 void unstr_free_func(unstr_t *str);
 void unstr_delete(size_t size, ...);
 void unstr_zero(unstr_t *str);
-unstr_t *unstr_copy(unstr_t *str);
+unstr_t *unstr_copy(unstr_t *s1, unstr_t *s2);
+unstr_t *unstr_copy_char(unstr_t *s1, const char *s2);
 unstr_t *unstr_substr(unstr_t *s1, unstr_t *s2, size_t len);
 unstr_t *unstr_substr_char(const char *str, size_t len);
 unstr_t *unstr_strcat(unstr_t *s1, unstr_t *s2);
@@ -38,5 +38,6 @@ unstr_t *unstr_file_get_contents(unstr_t *filename);
 void unstr_file_put_contents(unstr_t *filename, unstr_t *data, const char *mode);
 unstr_t *unstr_replace(unstr_t *data, unstr_t *search, unstr_t *replace);
 size_t *unstr_quick_search(unstr_t *text, unstr_t *search, size_t *size);
+unstr_t* unstr_strtok(unstr_t *str, const char *delim, size_t *index);
 
 #endif /* UNSTRING_H_INCLUDE */

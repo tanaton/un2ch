@@ -50,6 +50,10 @@ un2ch_t* un2ch_init(void)
 {
 	un2ch_t *init = malloc(sizeof(un2ch_t));
 	memset(init, 0, sizeof(un2ch_t));
+	init->byte = 0;						/* datのデータサイズ */
+	init->mod = 0;						/* datの最終更新時間 */
+	init->code = 0;						/* HTTPステータスコード */
+	init->mode = UN_MODE_NOTING;
 	init->server = unstr_init_memory(UN_SERVER_LENGTH);
 	init->board = unstr_init_memory(UN_BOARD_LENGTH);
 	init->thread = unstr_init_memory(UN_THREAD_LENGTH);
@@ -57,7 +61,9 @@ un2ch_t* un2ch_init(void)
 	init->thread_number = unstr_init_memory(UN_THREAD_NUMBER_LENGTH);
 	init->error = unstr_init_memory(UN_CHAR_LENGTH);
 	init->folder = unstr_init(UN_DAT_SAVE_FOLDER);
-	init->bbspath = unstr_init(UN_BBS_DATA_FILENAME);
+	init->board_list = unstr_init(UN_BBS_DATA_FILENAME);
+	init->board_subject = unstr_init(UN_BOARD_SUBJECT_FILENAME);
+	init->board_setting = unstr_init(UN_BOARD_SETTING_FILENAME);
 	init->logfile = unstr_init_memory(UN_CHAR_LENGTH);
 	init->bourbon = false;
 	return init;
@@ -65,10 +71,39 @@ un2ch_t* un2ch_init(void)
 
 void un2ch_free(un2ch_t *init)
 {
-	unstr_delete(9, init->server, init->board, init->thread_number,
-		init->thread, init->thread_index, init->logfile, init->bbspath,
-		init->error, init->folder);
+	if(init == NULL) return;
+	unstr_delete(
+		11,
+		init->server,
+		init->board,
+		init->thread,
+		init->thread_index,
+		init->thread_number,
+		init->error,
+		init->folder,
+		init->board_list,
+		init->board_subject,
+		init->board_setting,
+		init->logfile
+	);
 	free(init);
+}
+
+bool un2ch_set_folder(un2ch_t *init, const char *str)
+{
+	return (unstr_copy_char(init->folder, str) ? true : false);
+}
+bool un2ch_set_board_list(un2ch_t *init, const char *str)
+{
+	return (unstr_copy_char(init->board_list, str) ? true : false);
+}
+bool un2ch_set_board_subject(un2ch_t *init, const char *str)
+{
+	return (unstr_copy_char(init->board_subject, str) ? true : false);
+}
+bool un2ch_set_board_setting(un2ch_t *init, const char *str)
+{
+	return (unstr_copy_char(init->board_setting, str) ? true : false);
 }
 
 static bool set_thread(unstr_t *thread_number)
@@ -139,7 +174,7 @@ un_message_t un2ch_set_info(un2ch_t *init, unstr_t *server, unstr_t *board, unst
 		init->mode = UN_MODE_THREAD;
 	} else {
 		unstr_sprintf(init->logfile, "%$/%$/%$/%s",
-			init->folder, init->server, init->board, UN_BOARD_SETTING_FILENAME);
+			init->folder, init->server, init->board, UN_BOARD_SUBJECT_FILENAME);
 		init->mode = UN_MODE_BOARD;
 	}
 	return UN_MESSAGE_SACCESS;
@@ -171,7 +206,7 @@ un_message_t un2ch_set_info_path(un2ch_t *init, char *path)
 		return UN_MESSAGE_NOACCESS;
 	} else if(num == 2){
 		unstr_sprintf(init->logfile, "%$/%$/%$/%s",
-			init->folder, init->server, init->board, UN_BOARD_SETTING_FILENAME);
+			init->folder, init->server, init->board, UN_BOARD_SUBJECT_FILENAME);
 		init->mode = UN_MODE_BOARD;
 	} else {
 		if(!set_thread(init->thread_number)){
@@ -188,13 +223,6 @@ un_message_t un2ch_set_info_path(un2ch_t *init, char *path)
 
 unstr_t* un2ch_get_data(un2ch_t *init)
 {
-	unstr_zero(init->server);
-	unstr_zero(init->board);
-	unstr_zero(init->thread_number);
-	unstr_zero(init->thread);
-	unstr_zero(init->thread_index);
-	unstr_zero(init->logfile);
-
 	if(init->bourbon){
 		return bourbon_data(init);
 	}
@@ -219,22 +247,29 @@ static unstr_t* normal_data(un2ch_t *init)
 		case 206:
 			create_cache(init, data, UN_CACHE_EDIT);
 			unstr_free(data);
-			data = unstr_file_get_contents(logfile);
-			init->byte = data->length;
+			if((data = unstr_file_get_contents(logfile)) != NULL){
+				init->byte = data->length;
+			} else {
+				fprintf(stderr, "206 error\n");
+			}
 			break;
 		case 304:
 			unstr_free(data);
 			if((data = unstr_file_get_contents(logfile)) != NULL){
 				init->byte = data->length;
 			} else {
+				fprintf(stderr, "304 error\n");
 				// 鯖情報取得
 				un2ch_get_server(init);
 			}
 			break;
 		case 416:
 			unstr_free(data);
-			data = request(init, false);
-			create_cache(init, data, UN_CACHE_OVERWRITE);
+			if((data = request(init, false)) != NULL){
+				create_cache(init, data, UN_CACHE_OVERWRITE);
+			} else {
+				fprintf(stderr, "416 error\n");
+			}
 			break;
 		case 301:
 		case 302:
@@ -243,7 +278,7 @@ static unstr_t* normal_data(un2ch_t *init)
 			if((data = unstr_file_get_contents(logfile)) != NULL){
 				init->byte = data->length;
 				if(init->bourbon == false){
-					mod = timestp + (3600 * 24 * 365 * 5);
+					mod = timestp + (60 * 60 * 24 * 365 * 5);
 					touch(logfile, mod, mod); /* 未来の時間をセットしておく */
 				}
 			}
@@ -291,6 +326,7 @@ static unstr_t* bourbon_data(un2ch_t *init)
 	struct stat st;
 	unstr_t *logfile = init->logfile;
 	unstr_t *data = 0;
+	unstr_t *tmp = 0;
 	time_t times = time(NULL);
 
 	if((init->mode == UN_MODE_THREAD) && file_exists(logfile, &st)){
@@ -304,8 +340,10 @@ static unstr_t* bourbon_data(un2ch_t *init)
 	data = bourbon_request(init);
 	if(!data) return NULL;
 
-	if((strstr(data->data, "短パンマン ★") != NULL) ||
-	   (strstr(data->data, "名古屋はエ〜エ〜で") != NULL))
+	tmp = unstr_substr_char(data->data, 1024);
+	// TODO:SJISで文字列比較する
+	if((strstr(tmp->data, "短パンマン ★") != NULL) ||
+	   (strstr(tmp->data, "名古屋はエ～エ～で") != NULL))
 	{
 		unstr_free(data);
 		init->code = 302;
@@ -314,18 +352,19 @@ static unstr_t* bourbon_data(un2ch_t *init)
 			data = unstr_file_get_contents(logfile);
 			touch(logfile, mod, mod);
 		} else {
-			return NULL;
+			data = NULL;
 		}
 	} else {
 		create_cache(init, data, UN_CACHE_FOLDER);
 	}
+	unstr_free(tmp);
 	return data;
 }
 
 /* 板一覧取得 */
 bool un2ch_get_server(un2ch_t *init)
 {
-	char *index = 0;
+	size_t index = 0;
 	unstr_t *p1 = 0;
 	unstr_t *p2 = 0;
 	unstr_t *p3 = 0;
@@ -341,12 +380,10 @@ bool un2ch_get_server(un2ch_t *init)
 	p1 = unstr_init_memory(UN_CHAR_LENGTH);
 	p2 = unstr_init_memory(UN_CHAR_LENGTH);
 	p3 = unstr_init_memory(UN_CHAR_LENGTH);
-	unstr_free(tmp);
-	tmp = unstr_copy(line);
-	index = strtok(tmp->data, "\n");
+	unstr_copy(tmp, line);
+	list = unstr_strtok(tmp, "\n", &index);
 	unstr_zero(line);
-	while(index != NULL){
-		list = unstr_init(index);
+	while(list != NULL){
 		if(unstr_sscanf(list, "<B>$</B>", p1) == 1){
 			/* 書き込む */
 			unstr_strcat(line, p1);
@@ -361,9 +398,9 @@ bool un2ch_get_server(un2ch_t *init)
 			}
 		}
 		unstr_free(list);
-		index = strtok(NULL, "\n");
+		list = unstr_strtok(tmp, "\n", &index);
 	}
-	unstr_file_put_contents(init->bbspath, line, "w");
+	unstr_file_put_contents(init->board_list, line, "w");
 	unstr_delete(7, list, tmp, line, writedata, p1, p2, p3);
 	return true;
 }
@@ -427,7 +464,7 @@ unstr_t* un2ch_get_board_name(un2ch_t *init)
 		}
 	}
 
-	url = unstr_sprintf(NULL, "http://%$/%$/SETTING.TXT", init->server, init->board);
+	url = unstr_sprintf(NULL, "http://%$/%$/%s", init->server, init->board, UN_BOARD_SETTING_FILENAME);
 	/* HTTP接続で設定ファイル取得 */
 	data = unstr_get_http_file(url);
 	if(!data){
@@ -439,7 +476,7 @@ unstr_t* un2ch_get_board_name(un2ch_t *init)
 	unstr_file_put_contents(set, data, "w");
 	title = slice_board_name(data);
 	if(title){
-		mod = (times + (3600 * 24 * 7));
+		mod = times + (60 * 60 * 24 * 7);
 		/* ファイル更新時刻の変更 */
 		touch(set, mod, mod);
 	}
@@ -553,7 +590,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 		curl_easy_setopt(curl, CURLOPT_URL, tmp->data);
 	} else if(init->mode == UN_MODE_BOARD){
 		/* スレッド一覧取得用header生成 */
-		unstr_sprintf(tmp, "GET /%$/subject.txt HTTP/1.1", init->board);
+		unstr_sprintf(tmp, "GET /%$/%s HTTP/1.1", init->board, UN_BOARD_SUBJECT_FILENAME);
 		header = curl_slist_append(header, tmp->data);
 		unstr_sprintf(tmp, "Host: %$", init->server);
 		header = curl_slist_append(header, tmp->data);
@@ -562,7 +599,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 		header = curl_slist_append(header, "Connection: close");
 
 		curl_easy_setopt(curl, CURLOPT_ENCODING, "gzip");
-		unstr_sprintf(tmp, "http://%$/%$/subject.txt", init->server, init->board);
+		unstr_sprintf(tmp, "http://%$/%$/%s", init->server, init->board, UN_BOARD_SUBJECT_FILENAME);
 		curl_easy_setopt(curl, CURLOPT_URL, tmp->data);
 	} else {
 		init->code = 0;
@@ -617,14 +654,14 @@ static unstr_t* request(un2ch_t *init, bool flag)
 			}
 		}
 		data_size = getdata->length - header_size;
-		if(data_size > 0){
-			/* ヘッダーと本文との境目を\0に */
-			getdata->data[header_size - 1] = '\0';
-			if((header_data = strstr(getdata->data, "Location:")) != NULL){
-				if((header_data = strstr(header_data, "403/")) != NULL){
-					init->bourbon = true;
-				}
+		/* ヘッダーと本文との境目を\0に */
+		getdata->data[header_size - 1] = '\0';
+		if((header_data = strstr(getdata->data, "Location:")) != NULL){
+			if((header_data = strstr(header_data, "403/")) != NULL){
+				init->bourbon = true;
 			}
+		}
+		if(data_size > 0){
 			str = unstr_substr_char(getdata->data + header_size, data_size);
 		}
 	} else {
