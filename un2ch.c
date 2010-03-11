@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <utime.h>
 #include <curl/curl.h>
+#include <pthread.h>
 
 static bool in_array(const char *str, char **array, size_t size);
 static bool set_thread(unstr_t *thread);
@@ -25,7 +26,7 @@ static bool file_exists(unstr_t *filename, struct stat *data);
 static void touch(unstr_t *filename, time_t atime, time_t mtime);
 static void make_folder(un2ch_t *init);
 
-static char *sabakill[10] = {
+static char *sabakill[11] = {
 	"www.2ch.net",
 	"info.2ch.net",
 	"find.2ch.net",
@@ -35,7 +36,8 @@ static char *sabakill[10] = {
 	"stats.2ch.net",
 	"c-au.2ch.net",
 	"c-others1.2ch.net",
-	"movie.2ch.net"
+	"movie.2ch.net",
+	"dubai.2ch.net"
 };
 
 static char *bourbon_url[5] = {
@@ -91,19 +93,19 @@ void un2ch_free(un2ch_t *init)
 
 bool un2ch_set_folder(un2ch_t *init, const char *str)
 {
-	return (unstr_copy_char(init->folder, str) ? true : false);
+	return (unstr_strcpy_char(init->folder, str) ? true : false);
 }
 bool un2ch_set_board_list(un2ch_t *init, const char *str)
 {
-	return (unstr_copy_char(init->board_list, str) ? true : false);
+	return (unstr_strcpy_char(init->board_list, str) ? true : false);
 }
 bool un2ch_set_board_subject(un2ch_t *init, const char *str)
 {
-	return (unstr_copy_char(init->board_subject, str) ? true : false);
+	return (unstr_strcpy_char(init->board_subject, str) ? true : false);
 }
 bool un2ch_set_board_setting(un2ch_t *init, const char *str)
 {
-	return (unstr_copy_char(init->board_setting, str) ? true : false);
+	return (unstr_strcpy_char(init->board_setting, str) ? true : false);
 }
 
 static bool set_thread(unstr_t *thread_number)
@@ -160,7 +162,7 @@ un_message_t un2ch_set_info(un2ch_t *init, unstr_t *server, unstr_t *board, unst
 	unstr_strcat(init->board, board);
 	if(!server_check(server)){
 		return UN_MESSAGE_NOSERVER;
-	} else if(in_array(server->data, sabakill, 10)){
+	} else if(in_array(server->data, sabakill, 11)){
 		return UN_MESSAGE_NOACCESS;
 	} else if(thread_number){
 		if(!set_thread(thread_number)){
@@ -202,7 +204,7 @@ un_message_t un2ch_set_info_path(un2ch_t *init, char *path)
 		return UN_MESSAGE_NOACCESS;
 	} else if(!server_check(init->server)){
 		return UN_MESSAGE_NOSERVER;
-	} else if(in_array(init->server->data, sabakill, 10)){
+	} else if(in_array(init->server->data, sabakill, 11)){
 		return UN_MESSAGE_NOACCESS;
 	} else if(num == 2){
 		unstr_sprintf(init->logfile, "%$/%$/%$/%s",
@@ -259,7 +261,7 @@ static unstr_t* normal_data(un2ch_t *init)
 				init->byte = data->length;
 			} else {
 				fprintf(stderr, "304 error\n");
-				// 鯖情報取得
+				/* 鯖情報取得 */
 				un2ch_get_server(init);
 			}
 			break;
@@ -328,6 +330,10 @@ static unstr_t* bourbon_data(un2ch_t *init)
 	unstr_t *data = 0;
 	unstr_t *tmp = 0;
 	time_t times = time(NULL);
+	/* 短パンマン ★ (Shift-JIS) */
+	char tanpan[] = { 0x92, 0x5A, 0x83, 0x70, 0x83, 0x93, 0x83, 0x7d, 0x83, 0x93, 0x20, 0x81, 0x9a, '\0'};
+	/* 名古屋はエ～エ～で (Shift-JIS) */
+	char nagoya[] = { 0x96, 0xBC, 0x8C, 0xC3, 0x89, 0xAE, 0x82, 0xCD, 0x83, 0x47, 0x81, 0x60, 0x83, 0x47, 0x81, 0x60, 0x82, 0xC5, '\0'};
 
 	if((init->mode == UN_MODE_THREAD) && file_exists(logfile, &st)){
 		if(st.st_mtime > times){
@@ -340,10 +346,9 @@ static unstr_t* bourbon_data(un2ch_t *init)
 	data = bourbon_request(init);
 	if(!data) return NULL;
 
-	tmp = unstr_substr_char(data->data, 1024);
-	// TODO:SJISで文字列比較する
-	if((strstr(tmp->data, "短パンマン ★") != NULL) ||
-	   (strstr(tmp->data, "名古屋はエ～エ～で") != NULL))
+	tmp = unstr_substr_char(data->data, 256);
+	if((strstr(tmp->data, tanpan) != NULL) ||
+	   (strstr(tmp->data, nagoya) != NULL))
 	{
 		unstr_free(data);
 		init->code = 302;
@@ -380,7 +385,7 @@ bool un2ch_get_server(un2ch_t *init)
 	p1 = unstr_init_memory(UN_CHAR_LENGTH);
 	p2 = unstr_init_memory(UN_CHAR_LENGTH);
 	p3 = unstr_init_memory(UN_CHAR_LENGTH);
-	unstr_copy(tmp, line);
+	unstr_strcpy(tmp, line);
 	list = unstr_strtok(tmp, "\n", &index);
 	unstr_zero(line);
 	while(list != NULL){
@@ -390,7 +395,7 @@ bool un2ch_get_server(un2ch_t *init)
 			unstr_strcat_char(line, "\n");
 		} else if(unstr_sscanf(list, "<A HREF=http://$/$/>$</A>", p1, p2, p3) == 3){
 			if((strstr(p1->data, ".2ch.net") != NULL) || (strstr(p1->data, ".bbspink.com") != NULL)){
-				if(!in_array(p1->data, sabakill, 10)){
+				if(!in_array(p1->data, sabakill, 11)){
 					/* 書き込む */
 					unstr_sprintf(writedata, "%$/%$<>%$\n", p1, p2, p3);
 					unstr_strcat(line, writedata);
@@ -691,8 +696,8 @@ static unstr_t* bourbon_request(un2ch_t *init)
 	init->mod = time(NULL);
 	init->byte = 0;
 
-	srand(init->mod);
-	host = unstr_init(bourbon_url[rand() % 5]);
+	/* TODO:スレッドセーフな乱数にしたい */
+	host = unstr_init(bourbon_url[init->mod % 5]);
 
 	getdata = unstr_init_memory(UN_TCP_IP_FRAME_SIZE);
 	tmp = unstr_init_memory(UN_CHAR_LENGTH);
@@ -794,12 +799,12 @@ static void make_folder(un2ch_t *init)
 	unstr_t *path1 = 0;
 	unstr_t *path2 = 0;
 	unstr_t *path3 = 0;
-	path1 = unstr_sprintf(unstr_init_memory(64), "%$/%$",
+	path1 = unstr_sprintf(NULL, "%$/%$",
 		init->folder, init->server);
-	path2 = unstr_sprintf(unstr_init_memory(96), "%$/%$/%$",
+	path2 = unstr_sprintf(NULL, "%$/%$/%$",
 		init->folder, init->server, init->board);
 	if(init->mode == UN_MODE_THREAD){
-		path3 = unstr_sprintf(unstr_init_memory(128), "%$/%$/%$/%$",
+		path3 = unstr_sprintf(NULL, "%$/%$/%$/%$",
 			init->folder, init->server, init->board, init->thread_index);
 	}
 
