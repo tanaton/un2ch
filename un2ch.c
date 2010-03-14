@@ -91,23 +91,6 @@ void un2ch_free(un2ch_t *init)
 	free(init);
 }
 
-bool un2ch_set_folder(un2ch_t *init, const char *str)
-{
-	return (unstr_strcpy_char(init->folder, str) ? true : false);
-}
-bool un2ch_set_board_list(un2ch_t *init, const char *str)
-{
-	return (unstr_strcpy_char(init->board_list, str) ? true : false);
-}
-bool un2ch_set_board_subject(un2ch_t *init, const char *str)
-{
-	return (unstr_strcpy_char(init->board_subject, str) ? true : false);
-}
-bool un2ch_set_board_setting(un2ch_t *init, const char *str)
-{
-	return (unstr_strcpy_char(init->board_setting, str) ? true : false);
-}
-
 static bool set_thread(unstr_t *thread_number)
 {
 	char *tmp = thread_number->data;
@@ -465,8 +448,8 @@ unstr_t* un2ch_get_board_name(un2ch_t *init)
 	unstr_t *url = 0;
 	unstr_t *title = 0;
 	unstr_t *data = 0;
-	unstr_t *set = unstr_sprintf(NULL, "%$/%$/%$/%s",
-		init->folder, init->server, init->board, UN_BOARD_SETTING_FILENAME);
+	unstr_t *set = unstr_sprintf(NULL, "%$/%$/%$/setting.txt",
+		init->folder, init->server, init->board);
 	time_t times = time(NULL);
 	time_t mod = 0;
 	struct stat st;

@@ -16,7 +16,7 @@
 #define UN_DAT_SAVE_FOLDER			"/2ch/dat"
 #define UN_BOARD_SUBJECT_FILENAME	"subject.txt"
 /* SETTING.txtキャッシュ補完 */
-#define UN_BOARD_SETTING_FILENAME	"setting.txt"
+#define UN_BOARD_SETTING_FILENAME	"SETTING.TXT"
 
 #define UN_CHAR_LENGTH				256
 #define UN_SERVER_LENGTH			64
@@ -68,10 +68,6 @@ typedef struct un2ch_st {
 	bool bourbon;
 } un2ch_t;
 
-bool un2ch_set_folder(un2ch_t *init, const char *str);
-bool un2ch_set_board_list(un2ch_t *init, const char *str);
-bool un2ch_set_board_subject(un2ch_t *init, const char *str);
-bool un2ch_set_board_setting(un2ch_t *init, const char *str);
 un2ch_t* un2ch_init(void);
 void un2ch_free(un2ch_t *init);
 un_message_t un2ch_set_info(un2ch_t *init, unstr_t *server, unstr_t *board, unstr_t *thread);
