@@ -20,7 +20,7 @@ static size_t returned_data(void *ptr, size_t size, size_t nmemb, void *data);
 static unstr_t* bourbon_data(un2ch_t *init);
 static unstr_t* bourbon_request(un2ch_t *init);
 static unstr_t* slice_board_name(unstr_t *data);
-static unstr_t* unstr_get_http_file(unstr_t *url);
+static unstr_t* unstr_get_http_file(unstr_t *url, time_t *mod);
 static bool create_cache(un2ch_t *init, unstr_t *data, un_cache_t flag);
 static bool file_exists(unstr_t *filename, struct stat *data);
 static void touch(unstr_t *filename, time_t atime, time_t mtime);
@@ -376,10 +376,21 @@ bool un2ch_get_server(un2ch_t *init)
 	unstr_t *writedata = unstr_init_memory(UN_CHAR_LENGTH);
 	unstr_t *list = 0;
 	unstr_t *tmp = unstr_init(UN_BBS_DATA_URL);
-	unstr_t *line = unstr_get_http_file(tmp);
+	unstr_t *line = 0;
+	time_t mod = 0;
+	struct stat st;
+
+	line = unstr_get_http_file(tmp, &mod);
 	if(!line){
 		unstr_delete(2, tmp, line);
 		return false;
+	}
+	/* 更新時間の確認 */
+	if(file_exists(init->board_list, &st)){
+		if(st.st_mtime >= mod){
+			unstr_delete(2, tmp, line);
+			return false;
+		}
 	}
 	
 	p1 = unstr_init_memory(UN_CHAR_LENGTH);
@@ -471,7 +482,7 @@ unstr_t* un2ch_get_board_name(un2ch_t *init)
 
 	url = unstr_sprintf(NULL, "http://%$/%$/%s", init->server, init->board, UN_BOARD_SETTING_FILENAME);
 	/* HTTP接続で設定ファイル取得 */
-	data = unstr_get_http_file(url);
+	data = unstr_get_http_file(url, NULL);
 	if(!data){
 		unstr_delete(2, set, url);
 		return NULL;
@@ -490,8 +501,9 @@ unstr_t* un2ch_get_board_name(un2ch_t *init)
 	return title;
 }
 
-static unstr_t* unstr_get_http_file(unstr_t *url)
+static unstr_t* unstr_get_http_file(unstr_t *url, time_t *mod)
 {
+	long code = 0;
 	unstr_t *getdata = 0;
 	CURLcode res;
 	CURL* curl;
@@ -503,15 +515,21 @@ static unstr_t* unstr_get_http_file(unstr_t *url)
 	curl_easy_setopt(curl, CURLOPT_URL, url->data);
 	curl_easy_setopt(curl, CURLOPT_ENCODING, "gzip");
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
+	curl_easy_setopt(curl, CURLOPT_FILETIME, 1);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, returned_data);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, getdata);
 	curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1);
+	/* データを取得する */
 	res = curl_easy_perform(curl);
+	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
+	if(mod != NULL){
+		curl_easy_getinfo(curl, CURLINFO_FILETIME, (long *)mod);
+	}
 	/* 接続を閉じる */
 	curl_easy_cleanup(curl);
-	if(getdata->length <= 0){
+	if((getdata->length <= 0) || (code != 200)){
 		unstr_free(getdata);
-		return NULL;
+		getdata = NULL;
 	}
 	return getdata;
 }
