@@ -6,7 +6,7 @@
 
 #define UNARRAY_MAIN_SIZE		(16)
 #define unarray_free(array, func)		\
-	unarray_free_func((array), (func)); (array) = NULL;
+	do { unarray_free_func((array), (func)); (array) = NULL; } while(0)
 
 typedef struct unarray_st {
 	void		**data;

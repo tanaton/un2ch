@@ -9,7 +9,7 @@
 #define UNSTRING_HEAP_SIZE			(0x20)
 #define UNSTRING_MEMORY_STAMP		(0x55)	/* ascii:[U] bin:01010101 */
 #define unstr_free(str)				\
-	unstr_free_func(str); (str) = NULL;
+	do { unstr_free_func(str); (str) = NULL; } while(0)
 
 typedef enum {
 	UNSTRING_FALSE	= 0,

@@ -434,7 +434,7 @@ static size_t returned_data(void *ptr, size_t size, size_t nmemb, void *data)
 	size_t length = size * nmemb;
 	unstr_t *sfer = (unstr_t *)data;
 	if((sfer->length + length + 1) >= sfer->heap){
-		unstr_alloc(sfer, UN_TCP_IP_FRAME_SIZE);
+		unstr_alloc(sfer, UN_TCP_IP_FRAME_SIZE + length + 1);
 	}
 	memcpy(&(sfer->data[sfer->length]), ptr, length);
 	sfer->length += length;
@@ -546,7 +546,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 	/* ファイル更新時間 */
 	time_t timestp = 0;
 	time_t times = 0;
-	char strtime[UN_CHAR_LENGTH];
+	char strtime[UN_CHAR_LENGTH] = {0};
 	struct stat st;
 
 	/* curl */
@@ -579,11 +579,13 @@ static unstr_t* request(un2ch_t *init, bool flag)
 				unstr_delete(2, tmp, getdata);
 				return NULL;
 			} else {
+				/* ファイル更新時刻を代入 */
+				timestp = st.st_mtime;
 				/* 1バイト引いて取得する */
 				unstr_sprintf(tmp, "Range: bytes=%d-", st.st_size - 1);
 				header = curl_slist_append(header, tmp->data);
 				/* Sat, 29 Oct 1994 19:43:31 GMT */
-				strftime(strtime, UN_CHAR_LENGTH, "%a, %d %b %Y %H:%M:%S %Z", gmtime(&timestp));
+				strftime(strtime, UN_CHAR_LENGTH - 1, "%a, %d %b %Y %H:%M:%S %Z", gmtime(&timestp));
 				unstr_sprintf(tmp, "If-Modified-Since: %s", strtime);
 				header = curl_slist_append(header, tmp->data);
 			}
@@ -610,6 +612,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 	} else {
 		init->code = 0;
 		unstr_delete(2, tmp, getdata);
+		curl_easy_cleanup(curl);
 		return NULL;
 	}
 	/* 領域解放 */
@@ -635,7 +638,9 @@ static unstr_t* request(un2ch_t *init, bool flag)
 	res = curl_easy_perform(curl);
 	if(res != CURLE_OK){
 		unstr_free(getdata);
-		return str; /* NULL */
+		curl_slist_free_all(header);
+		curl_easy_cleanup(curl);
+		return NULL;
 	}
 	/* headerを解放 */
 	curl_slist_free_all(header);
@@ -731,6 +736,7 @@ static unstr_t* bourbon_request(un2ch_t *init)
 	} else {
 		init->code = 0;
 		unstr_delete(2, tmp, getdata);
+		curl_easy_cleanup(curl);
 		return NULL;
 	}
 	/* 領域解放 */
