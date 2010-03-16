@@ -4,8 +4,9 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-// 定数
 #define UNARRAY_MAIN_SIZE		(16)
+#define unarray_free(array, func)		\
+	unarray_free_func((array), (func)); (array) = NULL;
 
 typedef struct unarray_st {
 	void		**data;
@@ -14,7 +15,7 @@ typedef struct unarray_st {
 } unarray_t;
 
 unarray_t *unarray_init(void);
-void unarray_free(unarray_t *array, void (*free_func)(void *));
+void unarray_free_func(unarray_t *array, void (*free_func)(void *));
 bool unarray_push(unarray_t *array, void *data);
 void* unarray_pop(unarray_t *array);
 void* unarray_at(unarray_t *array, size_t at);
