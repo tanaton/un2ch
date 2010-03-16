@@ -27,7 +27,7 @@ static void *unarray_realloc(void *data, size_t size, size_t len)
 	if(data == NULL){
 		perror("unarray_realloc");
 	} else {
-		memset(data + len, 0, size - len);
+		memset(((char *)data) + len, 0, size - len);
 	}
 	return data;
 }
@@ -47,7 +47,7 @@ unarray_t *unarray_init(void)
 	return array;
 }
 
-void unarray_free(unarray_t *array, void (*free_func)(void *))
+void unarray_free_func(unarray_t *array, void (*free_func)(void *))
 {
 	int i = 0;
 	if(array != NULL){
@@ -108,7 +108,9 @@ bool unarray_insert(unarray_t *array, void *data, size_t at)
 	if(at >= array->length){
 		unarray_push(array, data);
 	} else {
-		memmove(array->data + at + 1, array->data + at, unsizeof(array->length - at));
+		memmove(array->data + at + 1,
+				array->data + at,
+				unsizeof(array->length - at));
 		array->data[at] = data;
 		array->length++;
 	}
@@ -129,7 +131,9 @@ bool unarray_delete(unarray_t *array, size_t at, void (*free_func)(void *))
 		if(free_func){
 			free_func(array->data[at]);
 		}
-		memmove(array->data + at, array->data + at + 1, unsizeof(array->length - at));
+		memmove(array->data + at,
+				array->data + at + 1,
+				unsizeof(array->length - at));
 		array->length--;
 	}
 	return true;

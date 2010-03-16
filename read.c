@@ -14,7 +14,6 @@ typedef struct nich_st {
 
 typedef struct databox_st {
 	unarray_t	*bl;
-	unh_t		*sl;
 	unstr_t		*key;
 } databox_t;
 
@@ -47,25 +46,25 @@ int main(void)
 			nich = unarray_at(ar, 0);
 			if(nich != NULL){
 				pthread_t tid;
-				printf("%s\n", nich->server->data);
 				/* スレッド作成 */
 				databox = unmalloc(sizeof(databox_t));
-				databox->sl = sl;
 				databox->bl = ar;
 				databox->key = unstr_init(nich->server->data);
-				if(pthread_create(&tid, NULL, mainThread, databox) != 0){
+				if(pthread_create(&tid, NULL, mainThread, databox)){
 					printf("%s スレッド生成エラー\n", nich->server->data);
 				}
+				databox = NULL;
 			}
 		}
 	}
 	/* 仮 */
 	while(1){
-		if(g_stop_flag){
-			break;
-		}
+		pthread_mutex_lock(&g_mutex);
+		if(g_stop_flag) break;
+		pthread_mutex_unlock(&g_mutex);
 		sleep(600);
 	}
+	//unh_free(sl);
 	return 0;
 }
 
@@ -131,7 +130,7 @@ unh_t *get_server(bool flag)
 				list = unarray_init();
 				unarray_push(list, nich);
 				p->data = list;
-				/* p->free_func = sl_free; */
+				p->free_func = sl_free;
 			} else {
 				list = p->data;
 				unarray_push(list, nich);
@@ -165,8 +164,8 @@ unarray_t *get_board(nich_t *nich)
 	}
 	tl = unarray_init();
 	get = un2ch_init();
-	p1 = unstr_init_memory(32);
-	p2 = unstr_init_memory(128);
+	p1 = unstr_init_memory(16);
+	p2 = unstr_init_memory(256);
 
 	un2ch_set_info(get, nich->server, nich->board, NULL);
 	filename = unstr_init(get->logfile->data);
@@ -275,14 +274,15 @@ void get_thread(unarray_t *tl)
 void *mainThread(void *data)
 {
 	databox_t *databox = (databox_t *)data;
+	unarray_t *bl = databox->bl;
 	unarray_t *tl = 0;
 	nich_t *nich = 0;
 	size_t i = 0;
 	/* スレッドを親から切り離す */
 	pthread_detach(pthread_self());
-	for(i = 0; i < databox->bl->length; i++){
+	for(i = 0; i < bl->length; i++){
 		/* スレッド取得 */
-		nich = unarray_at(databox->bl, i);
+		nich = unarray_at(bl, i);
 		tl = get_board(nich);
 		if(tl != NULL){
 			get_thread(tl);
@@ -302,19 +302,18 @@ void retryThread(databox_t *databox)
 	unh_t *nsl = 0;
 	/* ロック */
 	pthread_mutex_lock(&g_mutex);
-	printf("切り替え %s\n", databox->key->data);
 	nsl = get_server(true);
-	if(nsl == NULL){
+	if((nsl == NULL) && (g_stop_flag == false)){
 		pthread_t tid;
 		/* スレッド作成 */
-		if(pthread_create(&tid, NULL, mainThread, databox) != 0){
+		if(pthread_create(&tid, NULL, mainThread, databox)){
 			printf("%s スレッド生成エラー\n", databox->key->data);
+			g_stop_flag = true;
 		}
 	} else {
 		g_stop_flag = true;
 		unh_free(nsl);
 	}
-	printf("切り替え終了\n");
 	/* ロック解除 */
 	pthread_mutex_unlock(&g_mutex);
 }
