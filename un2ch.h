@@ -1,5 +1,5 @@
-#ifndef GET2CH_H_INCLUDE
-#define GET2CH_H_INCLUDE
+#ifndef UN2CH_H_INCLUDE
+#define UN2CH_H_INCLUDE
 
 #include <stdio.h>
 #include <time.h>
@@ -7,47 +7,66 @@
 #include "unstring.h"
 
 /* 板データ保存パス */
-#define UN_BBS_DATA_FILENAME		"/2ch/dat/ita.data"
+#define UN2CH_BBS_DATA_FILENAME			"/2ch/dat/ita.data"
 /* 板データマスターURL */
-#define UN_BBS_DATA_URL				"http://menu.2ch.net/bbsmenu.html"
+#define UN2CH_BBS_DATA_URL				"http://menu.2ch.net/bbsmenu.html"
 /* バージョン */
-#define UN_VERSION					"Monazilla/1.00 (un2ch/0.0.1)"
+#define UN2CH_VERSION					"Monazilla/1.00 (un2ch/0.0.1)"
 /* dat保管フォルダ名 */
-#define UN_DAT_SAVE_FOLDER			"/2ch/dat"
-#define UN_BOARD_SUBJECT_FILENAME	"subject.txt"
+#define UN2CH_DAT_SAVE_FOLDER			"/2ch/dat"
+#define UN2CH_BOARD_SUBJECT_FILENAME	"subject.txt"
 /* SETTING.txtキャッシュ補完 */
-#define UN_BOARD_SETTING_FILENAME	"SETTING.TXT"
+#define UN2CH_BOARD_SETTING_FILENAME	"SETTING.TXT"
 
-#define UN_CHAR_LENGTH				256
-#define UN_SERVER_LENGTH			64
-#define UN_BOARD_LENGTH				32
-#define UN_THREAD_LENGTH			15
-#define UN_THREAD_INDEX_LENGTH		4
-#define UN_THREAD_NUMBER_LENGTH		11
-#define UN_TCP_IP_FRAME_SIZE		40960
+#define UN2CH_CHAR_LENGTH				(256)
+#define UN2CH_SERVER_LENGTH				(64)
+#define UN2CH_BOARD_LENGTH				(32)
+#define UN2CH_THREAD_LENGTH				(15)
+#define UN2CH_THREAD_INDEX_LENGTH		(4)
+#define UN2CH_THREAD_NUMBER_LENGTH		(11)
+#define UN2CH_TCP_IP_FRAME_SIZE			(40960)
+
+#define un2ch_free(data)				\
+	do { un2ch_free_func(data); (data) = NULL; } while(0)
 
 /* 動作モード */
 typedef enum {
-	UN_MODE_NOTING = 0,
-	UN_MODE_SERVER,
-	UN_MODE_BOARD,
-	UN_MODE_THREAD
-} un_mode_t;
-
-/* メッセージ */
-typedef enum {
-	UN_MESSAGE_SACCESS = 0,
-	UN_MESSAGE_NOSERVER,
-	UN_MESSAGE_NOACCESS,
-	UN_MESSAGE_BOURBON
-} un_message_t;
+	UN2CH_MODE_NOTING = 0,
+	UN2CH_MODE_SERVER,
+	UN2CH_MODE_BOARD,
+	UN2CH_MODE_THREAD
+} un2ch_mode_t;
 
 /* キャッシュモード */
 typedef enum {
-	UN_CACHE_FOLDER = 1,
-	UN_CACHE_EDIT,
-	UN_CACHE_OVERWRITE
-} un_cache_t;
+	UN2CH_CACHE_FOLDER = 1,
+	UN2CH_CACHE_EDIT,
+	UN2CH_CACHE_OVERWRITE
+} un2ch_cache_t;
+
+/* メッセージ */
+typedef enum {
+	UN2CH_OK = 0,
+	UN2CH_NOSERVER,
+	UN2CH_NOACCESS,
+	UN2CH_BOURBON
+} un2ch_code_t;
+
+typedef enum {
+	UN2CHOPT_NONE = 0,
+	UN2CHOPT_SERVER,
+	UN2CHOPT_SERVER_CHAR,
+	UN2CHOPT_BOARD,
+	UN2CHOPT_BOARD_CHAR,
+	UN2CHOPT_THREAD,
+	UN2CHOPT_THREAD_CHAR
+} un2chopt_t;
+
+typedef enum {
+	UN2CHINFO_NONE = 0,
+	UN2CHINFO_RESPONSE_CODE,
+	UN2CHINFO_FILETIME
+} un2chinfo_t;
 
 typedef struct un2ch_st {
 	size_t byte;						/* datのデータサイズ */
@@ -64,16 +83,17 @@ typedef struct un2ch_st {
 	unstr_t *thread_index;
 	unstr_t *thread_number;
 	unstr_t *error;
-	un_mode_t mode;
+	un2ch_mode_t mode;
 	bool bourbon;
 } un2ch_t;
 
 un2ch_t* un2ch_init(void);
-void un2ch_free(un2ch_t *init);
-un_message_t un2ch_set_info(un2ch_t *init, unstr_t *server, unstr_t *board, unstr_t *thread);
-un_message_t un2ch_set_info_path(un2ch_t *init, char *path);
+void un2ch_free_func(un2ch_t *init);
+un2ch_code_t un2ch_set_info(un2ch_t *init, unstr_t *server, unstr_t *board, unstr_t *thread);
+un2ch_code_t un2ch_set_info_path(un2ch_t *init, char *path);
+un2ch_code_t un2ch_setopt(un2ch_t *init, un2chopt_t opt, ...);
 unstr_t* un2ch_get_data(un2ch_t *init);
 bool un2ch_get_server(un2ch_t *init);
 unstr_t* un2ch_get_board_name(un2ch_t *init);
 
-#endif /* un2ch_H_INCLUDE */
+#endif /* UN2CH_H_INCLUDE */

@@ -60,7 +60,10 @@ int main(void)
 	/* 仮 */
 	while(1){
 		pthread_mutex_lock(&g_mutex);
-		if(g_stop_flag) break;
+		if(g_stop_flag){
+			printf("Exit threads\n");
+			break;
+		}
 		pthread_mutex_unlock(&g_mutex);
 		sleep(600);
 	}
@@ -258,7 +261,7 @@ void get_thread(unarray_t *tl)
 		un2ch_set_info(get, nich->server, nich->board, nich->thread);
 		data = un2ch_get_data(get);
 		if(data != NULL){
-			printf("thread:%u code:%ld OK %s/%s/%s\n", (unsigned int)pthread_self(), get->code, nich->server->data,
+			printf("code:%ld OK %s/%s/%s\n", get->code, nich->server->data,
 					nich->board->data, nich->thread->data);
 		} else {
 			printf("error %ld %s/%s/%s\n", get->code, nich->server->data,

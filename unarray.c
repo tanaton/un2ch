@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 /* 非公開関数 */
 static void *unarray_malloc(size_t size);
@@ -71,13 +70,13 @@ static void unarray_alloc_memory(unarray_t *array, size_t size)
 	}
 }
 
-bool unarray_push(unarray_t *array, void *data)
+unarray_code_t unarray_push(unarray_t *array, void *data)
 {
-	if(!array) return false;
+	if(!array) return UNARRAY_NULL;
 	unarray_alloc_memory(array, 1);
 	array->data[array->length] = data;
 	array->length++;
-	return true;
+	return UNARRAY_OK;
 }
 
 void* unarray_pop(unarray_t *array)
@@ -101,11 +100,14 @@ void* unarray_at(unarray_t *array, size_t at)
 	return array->data[at];
 }
 
-bool unarray_insert(unarray_t *array, void *data, size_t at)
+unarray_code_t unarray_insert(unarray_t *array, void *data, size_t at)
 {
-	if(array == NULL || array->data == NULL) return false;
+	if(array == NULL)		return UNARRAY_NULL;
+	if(array->data == NULL) return UNARRAY_NOTHING_DATA;
 	unarray_alloc_memory(array, 1);
-	if(at >= array->length){
+	if(at > array->length){
+		return UNARRAY_OVER_LENGTH;
+	} else if(at == array->length){
 		unarray_push(array, data);
 	} else {
 		memmove(array->data + at + 1,
@@ -114,13 +116,14 @@ bool unarray_insert(unarray_t *array, void *data, size_t at)
 		array->data[at] = data;
 		array->length++;
 	}
-	return true;
+	return UNARRAY_OK;
 }
 
-bool unarray_delete(unarray_t *array, size_t at, void (*free_func)(void *))
+unarray_code_t unarray_delete(unarray_t *array, size_t at, void (*free_func)(void *))
 {
-	if(array == NULL || array->data == NULL) return false;
-	if(at >= array->length) return false;
+	if(array == NULL)		return UNARRAY_NULL;
+	if(array->data == NULL) return UNARRAY_NOTHING_DATA;
+	if(at >= array->length) return UNARRAY_OVER_LENGTH;
 	unarray_alloc_memory(array, 1);
 	if(at == 0){
 		void *data = unarray_pop(array);
@@ -136,6 +139,6 @@ bool unarray_delete(unarray_t *array, size_t at, void (*free_func)(void *))
 				unsizeof(array->length - at));
 		array->length--;
 	}
-	return true;
+	return UNARRAY_OK;
 }
 
