@@ -21,9 +21,9 @@ void *unmalloc(size_t size);
 void sl_free(void *data);
 void nich_free(void *p);
 unh_t *get_server(bool flag);
-unarray_t *get_board(nich_t *nich);
+unarray_t *get_board(un2ch_t *get, nich_t *nich);
 unh_t *get_board_res(unstr_t *filename);
-void get_thread(unarray_t *tl);
+void get_thread(un2ch_t *get, unarray_t *tl);
 void *mainThread(void *data);
 void retryThread(databox_t *databox);
 
@@ -111,7 +111,6 @@ unh_t *get_server(bool flag)
 	bool ok = un2ch_get_server(get);
 
 	if(flag && (ok == false)){
-		un2ch_free(get);
 		return NULL;
 	}
 	bl = unstr_file_get_contents(get->board_list);
@@ -148,11 +147,10 @@ unh_t *get_server(bool flag)
 	return hash;
 }
 
-unarray_t *get_board(nich_t *nich)
+unarray_t *get_board(un2ch_t *get, nich_t *nich)
 {
 	unstr_t *data = 0;
 	unarray_t *tl = 0;
-	un2ch_t *get = 0;
 	unstr_t *p1 = 0;
 	unstr_t *p2 = 0;
 	unstr_t *line = 0;
@@ -162,11 +160,10 @@ unarray_t *get_board(nich_t *nich)
 	size_t index = 0;
 	char *p = 0;
 	int nres = 0;
-	if(nich == NULL){
+	if(get == NULL || nich == NULL){
 		return NULL;
 	}
 	tl = unarray_init();
-	get = un2ch_init();
 	p1 = unstr_init_memory(16);
 	p2 = unstr_init_memory(256);
 
@@ -177,7 +174,6 @@ unarray_t *get_board(nich_t *nich)
 	data = un2ch_get_data(get);
 	if(data == NULL){
 		unstr_delete(4, data, p1, p2, filename);
-		un2ch_free(get);
 		unarray_free(tl, NULL);
 		printf("ita error\n");
 		return NULL;
@@ -213,7 +209,6 @@ unarray_t *get_board(nich_t *nich)
 	unh_free(resmap);
 	data = un2ch_get_board_name(get);
 	unstr_free(data);
-	un2ch_free(get);
 	return tl;
 }
 
@@ -248,13 +243,11 @@ unh_t *get_board_res(unstr_t *filename)
 	return resmap;
 }
 
-void get_thread(unarray_t *tl)
+void get_thread(un2ch_t *get, unarray_t *tl)
 {
 	unstr_t *data = 0;
-	un2ch_t *get = 0;
 	size_t i = 0;
-	if(tl == NULL) return;
-	get = un2ch_init();
+	if(get == NULL || tl == NULL) return;
 
 	for(i = 0; i < tl->length; i++){
 		nich_t *nich = unarray_at(tl, i);
@@ -271,11 +264,11 @@ void get_thread(unarray_t *tl)
 		/* 4秒止める */
 		sleep(4);
 	}
-	un2ch_free(get);
 }
 
 void *mainThread(void *data)
 {
+	un2ch_t *get = 0;
 	databox_t *databox = (databox_t *)data;
 	unarray_t *bl = databox->bl;
 	unarray_t *tl = 0;
@@ -283,16 +276,19 @@ void *mainThread(void *data)
 	size_t i = 0;
 	/* スレッドを親から切り離す */
 	pthread_detach(pthread_self());
+	get = un2ch_init();
+	//get->bourbon = true;
 	for(i = 0; i < bl->length; i++){
 		/* スレッド取得 */
 		nich = unarray_at(bl, i);
-		tl = get_board(nich);
+		tl = get_board(get, nich);
 		if(tl != NULL){
-			get_thread(tl);
+			get_thread(get, tl);
 		}
 		/* unarrayの開放 */
 		unarray_free(tl, nich_free);
 	}
+	un2ch_free(get);
 	/* 10分止める */
 	sleep(600);
 	retryThread(databox);

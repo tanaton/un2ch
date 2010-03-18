@@ -68,6 +68,7 @@ un2ch_t* un2ch_init(void)
 	init->board_setting = unstr_init(UN2CH_BOARD_SETTING_FILENAME);
 	init->logfile = unstr_init_memory(UN2CH_CHAR_LENGTH);
 	init->bourbon = false;
+	init->bourbon_count = 0;
 	return init;
 }
 
@@ -232,6 +233,10 @@ unstr_t* un2ch_get_data(un2ch_t *init)
 	unstr_t *data = 0;
 	if(init->bourbon){
 		data = bourbon_data(init);
+		init->bourbon_count++;
+		if(init->bourbon_count > UN2CH_BOURBON_LIMIT){
+			init->bourbon = false;
+		}
 	} else {
 		data = normal_data(init);
 	}
@@ -695,7 +700,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 		/* ヘッダーと本文との境目を\0に */
 		getdata->data[header_size - 1] = '\0';
 		if((header_data = strstr(getdata->data, "Location:")) != NULL){
-			if((header_data = strstr(header_data, "403/")) != NULL){
+			if((header_data = strstr(header_data, "403")) != NULL){
 				init->bourbon = true;
 			}
 		}
@@ -730,7 +735,9 @@ static unstr_t* bourbon_request(un2ch_t *init)
 	init->byte = 0;
 
 	/* TODO:スレッドセーフな乱数にしたい */
-	host = unstr_init(bourbon_url[init->mod % 5]);
+	host = unstr_init(bourbon_url[clock() % 5]);
+	/* 停止すると調子が良くなる？ */
+	sleep(1);
 
 	getdata = unstr_init_memory(UN2CH_TCP_IP_FRAME_SIZE);
 	tmp = unstr_init_memory(UN2CH_CHAR_LENGTH);
@@ -739,7 +746,7 @@ static unstr_t* bourbon_request(un2ch_t *init)
 		/* dat取得用header生成 */
 		unstr_sprintf(tmp, "GET /test/r.so/%$/%$/%$/ HTTP/1.1", init->server, init->board, init->thread_number);
 		header = curl_slist_append(header, tmp->data);
-		unstr_sprintf(tmp, "Host: %$", init->server);
+		unstr_sprintf(tmp, "Host: %$", host);
 		header = curl_slist_append(header, tmp->data);
 		unstr_sprintf(tmp, "User-Agent: %s", UN2CH_VERSION);
 		header = curl_slist_append(header, tmp->data);
@@ -752,7 +759,7 @@ static unstr_t* bourbon_request(un2ch_t *init)
 		/* スレッド一覧取得用header生成 */
 		unstr_sprintf(tmp, "GET /test/p.so/%$/%$/ HTTP/1.1", init->server, init->board);
 		header = curl_slist_append(header, tmp->data);
-		unstr_sprintf(tmp, "Host: %$", init->server);
+		unstr_sprintf(tmp, "Host: %$", host);
 		header = curl_slist_append(header, tmp->data);
 		unstr_sprintf(tmp, "User-Agent: %s", UN2CH_VERSION);
 		header = curl_slist_append(header, tmp->data);
@@ -780,6 +787,7 @@ static unstr_t* bourbon_request(un2ch_t *init)
 	if(res != CURLE_OK){
 		unstr_free(getdata);
 		getdata = NULL;
+		printf("%s\n", curl_easy_strerror(res));
 	} else {
 		curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &(init->code));
 	}

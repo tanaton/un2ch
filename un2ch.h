@@ -25,6 +25,7 @@
 #define UN2CH_THREAD_INDEX_LENGTH		(4)
 #define UN2CH_THREAD_NUMBER_LENGTH		(11)
 #define UN2CH_TCP_IP_FRAME_SIZE			(40960)
+#define UN2CH_BOURBON_LIMIT				(255)
 
 #define un2ch_free(data)				\
 	do { un2ch_free_func(data); (data) = NULL; } while(0)
@@ -85,6 +86,7 @@ typedef struct un2ch_st {
 	unstr_t *error;
 	un2ch_mode_t mode;
 	bool bourbon;
+	size_t bourbon_count;
 } un2ch_t;
 
 un2ch_t* un2ch_init(void);
