@@ -1,10 +1,10 @@
-#include "un2ch.h"
-#include "unstring.h"
-#include "unarray.h"
-#include <unhash.h>
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
+#include <unhash.h>
+#include "un2ch.h"
+#include "unstring.h"
+#include "unarray.h"
 
 typedef struct nich_st {
 	unstr_t *server;
@@ -67,7 +67,7 @@ int main(void)
 		pthread_mutex_unlock(&g_mutex);
 		sleep(600);
 	}
-	//unh_free(sl);
+	/* unh_free(sl); */
 	return 0;
 }
 
@@ -277,16 +277,17 @@ void *mainThread(void *data)
 	/* スレッドを親から切り離す */
 	pthread_detach(pthread_self());
 	get = un2ch_init();
-	//get->bourbon = true;
+	/* get->bourbon = true; */
 	for(i = 0; i < bl->length; i++){
 		/* スレッド取得 */
 		nich = unarray_at(bl, i);
 		tl = get_board(get, nich);
 		if(tl != NULL){
 			get_thread(get, tl);
+			/* unarrayの開放 */
+			unarray_free(tl, nich_free);
 		}
-		/* unarrayの開放 */
-		unarray_free(tl, nich_free);
+		sleep(4);
 	}
 	un2ch_free(get);
 	/* 10分止める */
