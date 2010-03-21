@@ -96,7 +96,9 @@ static bool set_thread(un2ch_t *init, unstr_t *unstr)
 {
 	char *tmp = 0;
 	size_t count = 0;
-	if((init == NULL) || (unstr == NULL)) return false;
+	if((init == NULL) || (unstr == NULL) || (unstr->data == NULL)){
+		return false;
+	}
 	tmp = unstr->data;
 	while((tmp[count] >= '0') && (tmp[count] <= '9')){
 		count++;
@@ -112,21 +114,12 @@ static bool set_thread(un2ch_t *init, unstr_t *unstr)
 
 static bool server_check(unstr_t *str)
 {
-	size_t len = str->length;
-	int *c = 0;
-	int *i = 0;
-	if(len < 8) return false;
-	c = (int *)(str->data + (len - 8));
-	i = (int *)".2ch.net"; /* 8文字 */
-	if((c[0] == i[0]) && (c[1] == i[1])){
+	if((str == NULL) || (str->data == NULL))
+		return false;
+	if(strstr(str->data, ".2ch.net"))
 		return true;
-	}
-	if(len < 12) return false;
-	c = (int *)(str->data + (len - 12));
-	i = (int *)".bbspink.com"; /* 12文字 */
-	if((c[0] == i[0]) && (c[1] == i[1]) && (c[2] == i[2])){
+	if(strstr(str->data, ".bbspink.com"))
 		return true;
-	}
 	return false;
 }
 
@@ -169,16 +162,16 @@ un2ch_code_t un2ch_set_info(un2ch_t *init, unstr_t *server, unstr_t *board, unst
 	unstr_zero(init->thread_index);
 	unstr_zero(init->logfile);
 
-	if(!(server && board)){
+	if((server == NULL) || (board == NULL)){
 		init->mode = UN2CH_MODE_SERVER;
 		ret = UN2CH_OK;
 		return ret;
 	}
 	unstr_strcat(init->server, server);
 	unstr_strcat(init->board, board);
-	if(!server_check(server)){
+	if(!server_check(init->server)){
 		ret = UN2CH_NOSERVER;
-	} else if(in_array(server->data, sabakill, 11)){
+	} else if(in_array(init->server->data, sabakill, 11)){
 		ret = UN2CH_NOACCESS;
 	} else {
 		if(thread_number){
