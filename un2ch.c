@@ -662,6 +662,14 @@ static unstr_t* request(un2ch_t *init, bool flag)
 	/* データを取得 */
 	res = curl_easy_perform(curl);
 	if(res != CURLE_OK){
+		if(init->thread_number->length > 0){
+			printf("ERROR %s/%s/%s\n",
+				init->server->data, init->board->data, init->thread->data);
+		} else {
+			printf("ERROR %s/%s\n",
+				init->server->data, init->board->data);
+		}
+		printf("%s\n", curl_easy_strerror(res));
 		unstr_free(getdata);
 		curl_slist_free_all(header);
 		curl_easy_cleanup(curl);
