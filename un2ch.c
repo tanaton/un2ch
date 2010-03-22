@@ -154,6 +154,7 @@ static bool mode_change(un2ch_t *init)
 		init->mode = UN2CH_MODE_BOARD;
 		ret = UN2CH_OK;
 	} else {
+		init->mode = UN2CH_MODE_NOTING;
 		ret = UN2CH_NOACCESS;
 	}
 	return ret;
@@ -162,6 +163,7 @@ static bool mode_change(un2ch_t *init)
 un2ch_code_t un2ch_set_info(un2ch_t *init, unstr_t *server, unstr_t *board, unstr_t *thread_number)
 {
 	un2ch_code_t ret = UN2CH_OK;
+	init->mode = UN2CH_MODE_NOTING;
 	unstr_zero(init->server);
 	unstr_zero(init->board);
 	unstr_zero(init->thread_number);
@@ -198,30 +200,31 @@ un2ch_code_t un2ch_setopt(un2ch_t *init, un2chopt_t opt, ...)
 	va_start(list, opt);
 	switch(opt){
 	case UN2CHOPT_SERVER:
-		unstr_free(init->server);
 		unstr = va_arg(list, unstr_t *);
-		break;
-	case UN2CHOPT_BOARD:
-		unstr_free(init->board);
-		unstr = va_arg(list, unstr_t *);
-		break;
-	case UN2CHOPT_THREAD:
-		unstr_free(init->thread_number);
-		unstr = va_arg(list, unstr_t *);
+		unstr_strcat(init->server, unstr);
 		break;
 	case UN2CHOPT_SERVER_CHAR:
-		unstr_free(init->server);
 		str = va_arg(list, char *);
+		unstr_strcat_char(init->server, str);
+		break;
+	case UN2CHOPT_BOARD:
+		unstr = va_arg(list, unstr_t *);
+		unstr_strcat(init->board, unstr);
 		break;
 	case UN2CHOPT_BOARD_CHAR:
-		unstr_free(init->board);
 		str = va_arg(list, char *);
+		unstr_strcat_char(init->board, str);
+		break;
+	case UN2CHOPT_THREAD:
+		unstr = va_arg(list, unstr_t *);
+		unstr_strcat(init->thread_number, unstr);
 		break;
 	case UN2CHOPT_THREAD_CHAR:
-		unstr_free(init->thread_number);
 		str = va_arg(list, char *);
+		unstr_strcat_char(init->thread_number, str);
 		break;
 	default:
+		ret = UN2CH_NOACCESS;
 		break;
 	}
 	va_end(list);
@@ -450,12 +453,11 @@ static bool file_exists(unstr_t *filename, struct stat *data)
 {
 	struct stat st;
 	bool ret = false;
-	if(stat(filename->data, &st) != 0){
-		return ret;
-	}
-	if(data) *data = st;
-	if(S_ISREG(st.st_mode) || S_ISDIR(st.st_mode)){
-		ret = true;
+	if(stat(filename->data, &st) == 0){
+		if(data) *data = st;
+		if(S_ISREG(st.st_mode) || S_ISDIR(st.st_mode)){
+			ret = true;
+		}
 	}
 	return ret;
 }
@@ -521,6 +523,9 @@ static unstr_t* unstr_get_http_file(unstr_t *url, time_t *mod)
 	unstr_t *getdata = 0;
 	CURLcode res;
 	CURL* curl;
+
+	printf("unstr_get_http_file\n");
+
 	/* curl */
 	curl = curl_easy_init();
 	if(!curl) return NULL;
@@ -637,7 +642,6 @@ static unstr_t* request(un2ch_t *init, bool flag)
 		unstr_sprintf(tmp, "User-Agent: %s", UN2CH_VERSION);
 		header = curl_slist_append(header, tmp->data);
 		header = curl_slist_append(header, "Connection: close");
-
 		curl_easy_setopt(curl, CURLOPT_ENCODING, "gzip");
 		unstr_sprintf(tmp, "http://%$/%$/%s", init->server, init->board, UN2CH_BOARD_SUBJECT_FILENAME);
 		curl_easy_setopt(curl, CURLOPT_URL, tmp->data);
@@ -648,7 +652,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 		return NULL;
 	}
 	/* 領域解放 */
-	unstr_free(tmp);
+	//unstr_free(tmp);
 
 	/* headerをセットする */
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
@@ -669,14 +673,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 	/* データを取得 */
 	res = curl_easy_perform(curl);
 	if(res != CURLE_OK){
-		if(init->thread_number->length > 0){
-			printf("ERROR %s/%s/%s\n",
-				init->server->data, init->board->data, init->thread->data);
-		} else {
-			printf("ERROR %s/%s\n",
-				init->server->data, init->board->data);
-		}
-		printf("%s\n", curl_easy_strerror(res));
+		printf("%s. %s\n", curl_easy_strerror(res), tmp->data);
 		unstr_free(getdata);
 		curl_slist_free_all(header);
 		curl_easy_cleanup(curl);

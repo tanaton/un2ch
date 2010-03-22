@@ -17,15 +17,15 @@ typedef struct databox_st {
 	unstr_t		*key;
 } databox_t;
 
-void *unmalloc(size_t size);
-void sl_free(void *data);
-void nich_free(void *p);
-unh_t *get_server(bool flag);
-unarray_t *get_board(un2ch_t *get, nich_t *nich);
-unh_t *get_board_res(unstr_t *filename);
-void get_thread(un2ch_t *get, unarray_t *tl);
-void *mainThread(void *data);
-void retryThread(databox_t *databox);
+static void *unmalloc(size_t size);
+static void sl_free(void *data);
+static void nich_free(void *p);
+static unh_t *get_server(bool flag);
+static unarray_t *get_board(un2ch_t *get, nich_t *nich);
+static unh_t *get_board_res(unstr_t *filename);
+static void get_thread(un2ch_t *get, unarray_t *tl);
+static void *mainThread(void *data);
+static void retryThread(databox_t *databox);
 
 static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool g_stop_flag = false;
@@ -71,7 +71,7 @@ int main(void)
 	return 0;
 }
 
-void *unmalloc(size_t size)
+static void *unmalloc(size_t size)
 {
 	void *p = malloc(size);
 	if(p == NULL){
@@ -81,12 +81,12 @@ void *unmalloc(size_t size)
 	return p;
 }
 
-void sl_free(void *data)
+static void sl_free(void *data)
 {
 	unarray_free(data, nich_free);
 }
 
-void nich_free(void *p)
+static void nich_free(void *p)
 {
 	nich_t *nich = p;
 	if(nich != NULL){
@@ -97,7 +97,7 @@ void nich_free(void *p)
 	free(nich);
 }
 
-unh_t *get_server(bool flag)
+static unh_t *get_server(bool flag)
 {
 	unh_t *hash = 0;
 	un2ch_t *get = un2ch_init();
@@ -147,7 +147,7 @@ unh_t *get_server(bool flag)
 	return hash;
 }
 
-unarray_t *get_board(un2ch_t *get, nich_t *nich)
+static unarray_t *get_board(un2ch_t *get, nich_t *nich)
 {
 	unstr_t *data = 0;
 	unarray_t *tl = 0;
@@ -212,7 +212,7 @@ unarray_t *get_board(un2ch_t *get, nich_t *nich)
 	return tl;
 }
 
-unh_t *get_board_res(unstr_t *filename)
+static unh_t *get_board_res(unstr_t *filename)
 {
 	unh_t *resmap = 0;
 	unstr_t *data = unstr_file_get_contents(filename);
@@ -243,7 +243,7 @@ unh_t *get_board_res(unstr_t *filename)
 	return resmap;
 }
 
-void get_thread(un2ch_t *get, unarray_t *tl)
+static void get_thread(un2ch_t *get, unarray_t *tl)
 {
 	unstr_t *data = 0;
 	size_t i = 0;
@@ -266,7 +266,7 @@ void get_thread(un2ch_t *get, unarray_t *tl)
 	}
 }
 
-void *mainThread(void *data)
+static void *mainThread(void *data)
 {
 	un2ch_t *get = 0;
 	databox_t *databox = (databox_t *)data;
@@ -298,7 +298,7 @@ void *mainThread(void *data)
 	return NULL;
 }
 
-void retryThread(databox_t *databox)
+static void retryThread(databox_t *databox)
 {
 	unh_t *nsl = 0;
 	/* ロック */
