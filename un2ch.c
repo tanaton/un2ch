@@ -523,9 +523,6 @@ static unstr_t* unstr_get_http_file(unstr_t *url, time_t *mod)
 	unstr_t *getdata = 0;
 	CURLcode res;
 	CURL* curl;
-
-	printf("unstr_get_http_file\n");
-
 	/* curl */
 	curl = curl_easy_init();
 	if(!curl) return NULL;
@@ -653,7 +650,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 		return NULL;
 	}
 	/* 領域解放 */
-	//unstr_free(tmp);
+	unstr_free(tmp);
 
 	/* headerをセットする */
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
@@ -676,7 +673,6 @@ static unstr_t* request(un2ch_t *init, bool flag)
 	/* データを取得 */
 	res = curl_easy_perform(curl);
 	if(res != CURLE_OK){
-		printf("%s. %s\n", curl_easy_strerror(res), tmp->data);
 		unstr_free(getdata);
 		curl_slist_free_all(header);
 		curl_easy_cleanup(curl);
@@ -796,7 +792,6 @@ static unstr_t* bourbon_request(un2ch_t *init)
 	if(res != CURLE_OK){
 		unstr_free(getdata);
 		getdata = NULL;
-		printf("%s\n", curl_easy_strerror(res));
 	} else {
 		curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &(init->code));
 	}
