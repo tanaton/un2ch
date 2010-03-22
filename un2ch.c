@@ -1,4 +1,4 @@
-#include "un2ch.h"
+#include <curl/curl.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -8,7 +8,7 @@
 #include <sys/file.h>
 #include <unistd.h>
 #include <utime.h>
-#include <curl/curl.h>
+#include "un2ch.h"
 
 static bool in_array(const char *str, char **array, size_t size);
 static bool set_thread(un2ch_t *init, unstr_t *unstr);
@@ -114,12 +114,19 @@ static bool set_thread(un2ch_t *init, unstr_t *unstr)
 
 static bool server_check(unstr_t *str)
 {
-	if((str == NULL) || (str->data == NULL))
+	if((str == NULL) || (str->data == NULL)){
 		return false;
-	if(strstr(str->data, ".2ch.net"))
-		return true;
-	if(strstr(str->data, ".bbspink.com"))
-		return true;
+	}
+	if(str->length > 8){
+		if(strcmp(&(str->data[str->length - 8]), ".2ch.net") == 0){
+			return true;
+		}
+		if(str->length > 12){
+			if(strcmp(&(str->data[str->length - 12]), ".bbspink.com") == 0){
+				return true;
+			}
+		}
+	}
 	return false;
 }
 

@@ -281,6 +281,7 @@ void *mainThread(void *data)
 	for(i = 0; i < bl->length; i++){
 		/* スレッド取得 */
 		nich = unarray_at(bl, i);
+		printf("get_thread %s/%s\n", nich->server->data, nich->board->data);
 		tl = get_board(get, nich);
 		if(tl != NULL){
 			get_thread(get, tl);

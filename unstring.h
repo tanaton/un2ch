@@ -17,9 +17,9 @@ typedef enum {
 } unstr_bool_t;
 
 typedef struct unstr_st {
-	char *data;
 	size_t length;
 	size_t heap;
+	char *data;
 } unstr_t;
 
 unstr_t *unstr_alloc(unstr_t *str, size_t size);
