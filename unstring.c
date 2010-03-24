@@ -163,6 +163,40 @@ void unstr_zero(unstr_t *str)
 	}
 }
 
+//! 文字列用の領域が確保されていることを確認する。
+/*!
+ * \param[in] str 対象文字列
+ * \return 確保済み:UNSTRING_TRUE, 確保なし:UNSTRING_FALSE
+ * \public
+ */
+unstr_bool_t unstr_isset(unstr_t *str)
+{
+	unstr_bool_t ret = UNSTRING_FALSE;
+	if((str != NULL) && (str->data != NULL)){
+		ret = UNSTRING_TRUE;
+	} else {
+		ret = UNSTRING_FALSE;
+	}
+	return ret;
+}
+
+//! 文字列が空またはNULLであるか確認する。
+/*!
+ * \param[in] str 対象文字列
+ * \return 空:UNSTRING_TRUE, 非空:UNSTRING_FALSE
+ * \public
+ */
+unstr_bool_t unstr_empty(unstr_t *str)
+{
+	unstr_bool_t ret = UNSTRING_FALSE;
+	if((str == NULL) || (str->data == NULL) || (str->length <= 0)){
+		ret = UNSTRING_TRUE;
+	} else {
+		ret = UNSTRING_FALSE;
+	}
+	return ret;
+}
+
 //! 文字列の長さを返す
 /*!
  * \param[in] str 対象文字列
@@ -171,8 +205,10 @@ void unstr_zero(unstr_t *str)
  */
 size_t unstr_strlen(unstr_t *str)
 {
-	if(str == NULL) return 0;
-	return str->length;
+	if(unstr_isset(str)){
+		return str->length;
+	}
+	return 0;
 }
 
 //! 文字列をコピーする。
@@ -184,9 +220,11 @@ size_t unstr_strlen(unstr_t *str)
  */
 unstr_bool_t unstr_strcpy(unstr_t *s1, unstr_t *s2)
 {
-	if(s1 == NULL) return UNSTRING_FALSE;
-	unstr_zero(s1);
-	return unstr_strcat(s1, s2);
+	if(unstr_isset(s1)){
+		unstr_zero(s1);
+		return unstr_strcat(s1, s2);
+	}
+	return UNSTRING_FALSE;
 }
 
 //! unstr_t文字列にchar文字列をコピーする。
@@ -199,7 +237,9 @@ unstr_bool_t unstr_strcpy(unstr_t *s1, unstr_t *s2)
 unstr_bool_t unstr_strcpy_char(unstr_t *s1, const char *s2)
 {
 	unstr_t *str = 0;
-	if((s1 == NULL) || (s2 == NULL)) return UNSTRING_FALSE;
+	if((!unstr_isset(s1)) || (s2 == NULL)){
+		return UNSTRING_FALSE;
+	}
 	str = unstr_init(s2);
 	unstr_strcpy(s1, str);
 	unstr_free(str);
@@ -216,7 +256,7 @@ unstr_bool_t unstr_strcpy_char(unstr_t *s1, const char *s2)
  */
 unstr_bool_t unstr_substr(unstr_t *s1, unstr_t *s2, size_t len)
 {
-	if((s1 == NULL) || (s2 == NULL)) return UNSTRING_FALSE;
+	if((!unstr_isset(s1)) || unstr_empty(s2)) return UNSTRING_FALSE;
 	if(s2->length < len){
 		len = s2->length;
 	}
@@ -258,7 +298,7 @@ unstr_t *unstr_substr_char(const char *str, size_t len)
  */
 unstr_bool_t unstr_strcat(unstr_t *s1, unstr_t *s2)
 {
-	if((s1 == NULL) || (s2 == NULL)) return UNSTRING_FALSE;
+	if((!unstr_isset(s1)) || unstr_empty(s2)) return UNSTRING_FALSE;
 	if(unstr_check_heap_size(s1, s2->length + 1)){
 		unstr_alloc(s1, s2->length);
 	}
@@ -279,7 +319,7 @@ unstr_bool_t unstr_strcat_char(unstr_t *str, const char *c)
 {
 	unstr_t *data = 0;
 	unstr_bool_t ret = UNSTRING_FALSE;
-	if(c == NULL) return UNSTRING_FALSE;
+	if((!unstr_isset(str)) || (c == NULL)) return UNSTRING_FALSE;
 	data = unstr_init(c);
 	ret = unstr_strcat(str, data);
 	unstr_free(data);
@@ -295,11 +335,10 @@ unstr_bool_t unstr_strcat_char(unstr_t *str, const char *c)
  */
 int unstr_strcmp(unstr_t *s1, unstr_t *s2)
 {
-	if((s1 == NULL) || (s2 == NULL) ||
-	   (s1->data == NULL) || (s2->data == NULL)){
-		return 0x100;
+	if(unstr_isset(s1) && unstr_isset(s2)){
+		return strcmp(s1->data, s2->data);
 	}
-	return strcmp(s1->data, s2->data);
+	return 0x100;
 }
 
 //! 対象文字列を区切り文字で切り、格納先に格納する。
@@ -317,7 +356,9 @@ unstr_t **unstr_split(unstr_t *str, const char *tmp, size_t *len)
 	unstr_t **ret = 0;
 	size_t size = 0;
 	size_t heap = 8;
-	if(str == NULL || tmp == NULL || len == NULL) return 0;
+	if(unstr_empty(str) || tmp == NULL || len == NULL){
+		return NULL;
+	}
 	data = unstr_init(str->data);
 
 	s = unstr_strtok(data, tmp, &size);
@@ -353,10 +394,10 @@ unstr_t *unstr_sprintf(unstr_t *str, const char *format, ...)
 	char *sp = 0;
 	int ip = 0;
 	va_start(list, format);
-	if(str == NULL){
-		str = unstr_init_memory(UNSTRING_HEAP_SIZE);
-	} else {
+	if(unstr_isset(str)){
 		unstr_zero(str);
+	} else {
+		str = unstr_init_memory(UNSTRING_HEAP_SIZE);
 	}
 	while(*format != '\0'){
 		switch(*format){
@@ -426,7 +467,7 @@ unstr_bool_t unstr_reverse(unstr_t *str)
 	size_t size = 0;
 	size_t count = 0;
 	int c = 0;
-	if(str == NULL) return UNSTRING_FALSE;
+	if(unstr_empty(str)) return UNSTRING_FALSE;
 	length = str->length - 1;
 	size = str->length / 2;
 	while(count < size){
@@ -511,7 +552,7 @@ size_t unstr_sscanf(unstr_t *data, const char *format, ...)
 	char *tmp = data->data;
 	char *index = 0;
 
-	if(data == NULL || data->data == NULL) return 0;
+	if(!unstr_isset(data)) return 0;
 	search = unstr_init_memory(UNSTRING_HEAP_SIZE);
 	va_start(list, format);
 	/* 先頭を探索する */
@@ -558,7 +599,7 @@ size_t unstr_sscanf(unstr_t *data, const char *format, ...)
 				steady = (size_t)(index - tmp);
 			}
 		}
-		if(str != NULL){
+		if(unstr_isset(str)){
 			unstr_zero(str);
 			if(unstr_check_heap_size(str, steady + 1)){
 				unstr_alloc(str, steady + 1);
@@ -624,7 +665,9 @@ unstr_bool_t unstr_file_put_contents(unstr_t *filename, unstr_t *data, const cha
 {
 	size_t size = 0;
 	FILE *fp = fopen(filename->data, mode);
-	if(fp == NULL) return UNSTRING_FALSE;
+	if((fp == NULL) || unstr_empty(data)){
+		return UNSTRING_FALSE;
+	}
 	ftell(fp);
 	size = fwrite(data->data, 1, data->length, fp);
 	fclose(fp);
@@ -646,7 +689,7 @@ unstr_t *unstr_replace(unstr_t *data, unstr_t *search, unstr_t *replace)
 	char *pt = data->data;
 	char *index = 0;
 	
-	if((data == NULL) || (search == NULL) || (replace == NULL)){
+	if(unstr_empty(data) || unstr_empty(search) || unstr_empty(replace)){
 		return NULL;
 	}
 	string = unstr_init_memory(data->length);
@@ -736,6 +779,7 @@ unstr_t *unstr_strtok(unstr_t *str, const char *delim, size_t *index)
 	size_t len = 0;
 	size_t i = 0;
 	if(index == NULL) return NULL;
+	if(unstr_empty(str)) return NULL;
 	if((*index) > str->length) return NULL;
 	ptr = str->data + (*index);
 	p = strstr(ptr, delim);

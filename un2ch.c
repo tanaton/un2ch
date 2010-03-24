@@ -10,7 +10,7 @@
 #include <utime.h>
 #include "un2ch.h"
 
-static bool in_array(const char *str, char **array, size_t size);
+static bool in_array(const char *str, const char **array, size_t size);
 static bool set_thread(un2ch_t *init, unstr_t *unstr);
 static bool server_check(unstr_t *str);
 static bool mode_change(un2ch_t *init);
@@ -26,7 +26,7 @@ static bool file_exists(unstr_t *filename, struct stat *data);
 static void touch(unstr_t *filename, time_t atime, time_t mtime);
 static void make_folder(un2ch_t *init);
 
-static char *sabakill[11] = {
+static const char *g_sabakill[11] = {
 	"www.2ch.net",
 	"info.2ch.net",
 	"find.2ch.net",
@@ -40,13 +40,18 @@ static char *sabakill[11] = {
 	"dubai.2ch.net"
 };
 
-static char *bourbon_url[5] = {
+static const char *g_bourbon_url[5] = {
 	"bg20.2ch.net",
 	"bg21.2ch.net",
 	"bg22.2ch.net",
 	"bg23.2ch.net",
 	"bg24.2ch.net"
 };
+
+/* 短パンマン ★ (Shift-JIS) */
+static const char g_tanpan[] = { 0x92, 0x5A, 0x83, 0x70, 0x83, 0x93, 0x83, 0x7d, 0x83, 0x93, 0x20, 0x81, 0x9a, '\0'};
+/* 名古屋はエ～エ～で (Shift-JIS) */
+static const char g_nagoya[] = { 0x96, 0xBC, 0x8C, 0xC3, 0x89, 0xAE, 0x82, 0xCD, 0x83, 0x47, 0x81, 0x60, 0x83, 0x47, 0x81, 0x60, 0x82, 0xC5, '\0'};
 
 un2ch_t* un2ch_init(void)
 {
@@ -96,7 +101,7 @@ static bool set_thread(un2ch_t *init, unstr_t *unstr)
 {
 	char *tmp = 0;
 	size_t count = 0;
-	if((init == NULL) || (unstr == NULL) || (unstr->data == NULL)){
+	if((init == NULL) || unstr_empty(unstr)){
 		return false;
 	}
 	tmp = unstr->data;
@@ -114,7 +119,7 @@ static bool set_thread(un2ch_t *init, unstr_t *unstr)
 
 static bool server_check(unstr_t *str)
 {
-	if((str == NULL) || (str->data == NULL)){
+	if(unstr_empty(str)){
 		return false;
 	}
 	if(str->length > 8){
@@ -133,22 +138,17 @@ static bool server_check(unstr_t *str)
 static bool mode_change(un2ch_t *init)
 {
 	un2ch_code_t ret = UN2CH_OK;
-	if(	init->thread_number &&
-			(init->thread_number->length > 0) &&
-		init->board &&
-			(init->board->length > 0) &&
-		init->server &&
-			(init->server->length > 0)){
+	if((!unstr_empty(init->thread_number)) &&
+	   (!unstr_empty(init->board)) &&
+	   (!unstr_empty(init->server))){
 		unstr_sprintf(init->thread, "%$.dat", init->thread_number);
 		unstr_substr(init->thread_index, init->thread_number, 4);
 		unstr_sprintf(init->logfile, "%$/%$/%$/%$/%$",
 			init->folder, init->server, init->board, init->thread_index, init->thread);
 		init->mode = UN2CH_MODE_THREAD;
 		ret = UN2CH_OK;
-	} else if(	init->board &&
-					(init->board->length > 0) &&
-				init->server &&
-					(init->server->length > 0)){
+	} else if((!unstr_empty(init->board)) &&
+			  (!unstr_empty(init->server))){
 		unstr_sprintf(init->logfile, "%$/%$/%$/%s",
 			init->folder, init->server, init->board, UN2CH_BOARD_SUBJECT_FILENAME);
 		init->mode = UN2CH_MODE_BOARD;
@@ -171,7 +171,7 @@ un2ch_code_t un2ch_set_info(un2ch_t *init, unstr_t *server, unstr_t *board, unst
 	unstr_zero(init->thread_index);
 	unstr_zero(init->logfile);
 
-	if((server == NULL) || (board == NULL)){
+	if(unstr_empty(server) || unstr_empty(board)){
 		init->mode = UN2CH_MODE_SERVER;
 		ret = UN2CH_OK;
 		return ret;
@@ -180,7 +180,7 @@ un2ch_code_t un2ch_set_info(un2ch_t *init, unstr_t *server, unstr_t *board, unst
 	unstr_strcat(init->board, board);
 	if(!server_check(init->server)){
 		ret = UN2CH_NOSERVER;
-	} else if(in_array(init->server->data, sabakill, 11)){
+	} else if(in_array(init->server->data, g_sabakill, 11)){
 		ret = UN2CH_NOACCESS;
 	} else {
 		if(thread_number){
@@ -239,6 +239,7 @@ unstr_t* un2ch_get_data(un2ch_t *init)
 		init->bourbon_count++;
 		if(init->bourbon_count > UN2CH_BOURBON_LIMIT){
 			init->bourbon = false;
+			init->bourbon_count = 0;
 		}
 	} else {
 		data = normal_data(init);
@@ -345,25 +346,20 @@ static unstr_t* bourbon_data(un2ch_t *init)
 	unstr_t *data = 0;
 	unstr_t *tmp = 0;
 	time_t times = time(NULL);
-	/* 短パンマン ★ (Shift-JIS) */
-	char tanpan[] = { 0x92, 0x5A, 0x83, 0x70, 0x83, 0x93, 0x83, 0x7d, 0x83, 0x93, 0x20, 0x81, 0x9a, '\0'};
-	/* 名古屋はエ～エ～で (Shift-JIS) */
-	char nagoya[] = { 0x96, 0xBC, 0x8C, 0xC3, 0x89, 0xAE, 0x82, 0xCD, 0x83, 0x47, 0x81, 0x60, 0x83, 0x47, 0x81, 0x60, 0x82, 0xC5, '\0'};
 
 	if((init->mode == UN2CH_MODE_THREAD) && file_exists(logfile, &st)){
 		if(st.st_mtime > times){
 			init->code = 302;
-			data = unstr_file_get_contents(logfile);
-			return data;
+			return unstr_file_get_contents(logfile);
 		}
 	}
 
 	data = bourbon_request(init);
-	if(!data) return NULL;
+	if(unstr_empty(data)) return NULL;
 
 	tmp = unstr_substr_char(data->data, 256);
-	if((strstr(tmp->data, tanpan) != NULL) ||
-	   (strstr(tmp->data, nagoya) != NULL))
+	if((strstr(tmp->data, g_tanpan) != NULL) ||
+	   (strstr(tmp->data, g_nagoya) != NULL))
 	{
 		unstr_free(data);
 		init->code = 302;
@@ -396,7 +392,7 @@ bool un2ch_get_server(un2ch_t *init)
 	struct stat st;
 
 	line = unstr_get_http_file(tmp, &mod);
-	if(!line){
+	if(unstr_empty(line)){
 		unstr_delete(2, tmp, line);
 		return false;
 	}
@@ -421,7 +417,7 @@ bool un2ch_get_server(un2ch_t *init)
 			unstr_strcat_char(line, "\n");
 		} else if(unstr_sscanf(list, "<A HREF=http://$/$/>$</A>", p1, p2, p3) == 3){
 			if((strstr(p1->data, ".2ch.net") != NULL) || (strstr(p1->data, ".bbspink.com") != NULL)){
-				if(!in_array(p1->data, sabakill, 11)){
+				if(!in_array(p1->data, g_sabakill, 11)){
 					/* 書き込む */
 					unstr_sprintf(writedata, "%$/%$<>%$\n", p1, p2, p3);
 					unstr_strcat(line, writedata);
@@ -436,7 +432,7 @@ bool un2ch_get_server(un2ch_t *init)
 	return true;
 }
 
-static bool in_array(const char *str, char **array, size_t size)
+static bool in_array(const char *str, const char **array, size_t size)
 {
 	int i = 0;
 	bool ret = false;
@@ -499,7 +495,7 @@ unstr_t* un2ch_get_board_name(un2ch_t *init)
 	url = unstr_sprintf(NULL, "http://%$/%$/%s", init->server, init->board, UN2CH_BOARD_SETTING_FILENAME);
 	/* HTTP接続で設定ファイル取得 */
 	data = unstr_get_http_file(url, NULL);
-	if(!data){
+	if(unstr_empty(data)){
 		unstr_delete(2, set, url);
 		return NULL;
 	}
@@ -507,7 +503,7 @@ unstr_t* un2ch_get_board_name(un2ch_t *init)
 	make_folder(init);
 	unstr_file_put_contents(set, data, "w");
 	title = slice_board_name(data);
-	if(title){
+	if(!unstr_empty(title)){
 		mod = times + (60 * 60 * 24 * 7);
 		/* ファイル更新時刻の変更 */
 		touch(set, mod, mod);
@@ -525,7 +521,7 @@ static unstr_t* unstr_get_http_file(unstr_t *url, time_t *mod)
 	CURL* curl;
 	/* curl */
 	curl = curl_easy_init();
-	if(!curl) return NULL;
+	if(curl == NULL) return NULL;
 	/* データ格納用 */
 	getdata = unstr_init_memory(UN2CH_TCP_IP_FRAME_SIZE);
 	curl_easy_setopt(curl, CURLOPT_URL, url->data);
@@ -544,7 +540,7 @@ static unstr_t* unstr_get_http_file(unstr_t *url, time_t *mod)
 	}
 	/* 接続を閉じる */
 	curl_easy_cleanup(curl);
-	if((getdata->length <= 0) || (code != 200)){
+	if(unstr_empty(getdata) || (code != 200)){
 		unstr_free(getdata);
 		getdata = NULL;
 	}
@@ -586,7 +582,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 
 	/* curl */
 	curl = curl_easy_init();
-	if(!curl) return NULL;
+	if(curl == NULL) return NULL;
 
 	/* レスポンス格納用 */
 	getdata = unstr_init_memory(UN2CH_TCP_IP_FRAME_SIZE);
@@ -612,6 +608,8 @@ static unstr_t* request(un2ch_t *init, bool flag)
 			if(st.st_mtime > times){
 				init->code = 302;
 				unstr_delete(2, tmp, getdata);
+				curl_slist_free_all(header);
+				curl_easy_cleanup(curl);
 				return NULL;
 			} else {
 				/* ファイル更新時刻を代入 */
@@ -646,6 +644,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 	} else {
 		init->code = 0;
 		unstr_delete(2, tmp, getdata);
+		curl_slist_free_all(header); /* 現段階ではNULL */
 		curl_easy_cleanup(curl);
 		return NULL;
 	}
@@ -732,16 +731,14 @@ static unstr_t* bourbon_request(un2ch_t *init)
 
 	/* curl */
 	curl = curl_easy_init();
-	if(!curl) return NULL;
+	if(curl == NULL) return NULL;
 
 	init->code = 0;
 	init->mod = time(NULL);
 	init->byte = 0;
 
 	/* TODO:スレッドセーフな乱数にしたい */
-	host = unstr_init(bourbon_url[clock() % 5]);
-	/* 停止すると調子が良くなる？ */
-	sleep(1);
+	host = unstr_init(g_bourbon_url[clock() % 5]);
 
 	getdata = unstr_init_memory(UN2CH_TCP_IP_FRAME_SIZE);
 	tmp = unstr_init_memory(UN2CH_CHAR_LENGTH);
@@ -774,6 +771,7 @@ static unstr_t* bourbon_request(un2ch_t *init)
 	} else {
 		init->code = 0;
 		unstr_delete(2, tmp, getdata);
+		curl_slist_free_all(header); /* 現段階ではNULL */
 		curl_easy_cleanup(curl);
 		return NULL;
 	}
@@ -807,15 +805,17 @@ static void touch(unstr_t *filename, time_t atime, time_t mtime)
 
 static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag)
 {
-	if(!data) return false;
-	
+	if(unstr_empty(data)){
+		return false;
+	}
+
 	switch(flag){
 	case UN2CH_CACHE_FOLDER:
 		make_folder(init);
 		break;
 	case UN2CH_CACHE_EDIT:
-		if(*(data->data) == '\n'){
-			*(data->data) = '\0';
+		if(data->data[0] == '\n'){
+			unstr_zero(data);
 		}
 		break;
 	case UN2CH_CACHE_OVERWRITE:
@@ -828,7 +828,7 @@ static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag)
 	}
 	
 	/* ファイルに書き込む */
-	if(*(data->data) != '\0'){
+	if(data->length > 0){
 		if(flag == UN2CH_CACHE_EDIT){
 			unstr_file_put_contents(init->logfile, data, "a"); /* 追記 */
 		} else {

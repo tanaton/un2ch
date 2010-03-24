@@ -172,7 +172,7 @@ static unarray_t *get_board(un2ch_t *get, nich_t *nich)
 	/* 必要箇所のみ更新するための準備 */
 	resmap = get_board_res(filename);
 	data = un2ch_get_data(get);
-	if(data == NULL){
+	if(unstr_empty(data)){
 		unstr_delete(4, data, p1, p2, filename);
 		unarray_free(tl, NULL);
 		printf("ita error\n");
@@ -215,14 +215,16 @@ static unarray_t *get_board(un2ch_t *get, nich_t *nich)
 static unh_t *get_board_res(unstr_t *filename)
 {
 	unh_t *resmap = 0;
-	unstr_t *data = unstr_file_get_contents(filename);
+	unstr_t *data = 0;
 	unstr_t *p1 = 0;
 	unstr_t *p2 = 0;
 	unstr_t *line = 0;
 	size_t index = 0;
 	char *p = 0;
 	int nres = 0;
-	if(data == NULL){
+
+	data = unstr_file_get_contents(filename);
+	if(unstr_empty(data)){
 		return NULL;
 	}
 	resmap = unh_init(16, 128, 4);
@@ -246,20 +248,22 @@ static unh_t *get_board_res(unstr_t *filename)
 static void get_thread(un2ch_t *get, unarray_t *tl)
 {
 	unstr_t *data = 0;
+	nich_t *nich = 0;
 	size_t i = 0;
 	if(get == NULL || tl == NULL) return;
 
 	for(i = 0; i < tl->length; i++){
-		nich_t *nich = unarray_at(tl, i);
+		nich = unarray_at(tl, i);
 		un2ch_set_info(get, nich->server, nich->board, nich->thread);
 		data = un2ch_get_data(get);
-		if(data != NULL){
-			printf("code:%ld OK %s/%s/%s\n", get->code, nich->server->data,
-					nich->board->data, nich->thread->data);
-		} else {
+		if(unstr_empty(data)){
 			printf("error %ld %s/%s/%s\n", get->code, nich->server->data,
 					nich->board->data, nich->thread->data);
+		} else {
+			printf("code:%ld OK %s/%s/%s\n", get->code, nich->server->data,
+					nich->board->data, nich->thread->data);
 		}
+		nich = NULL;
 		unstr_free(data);
 		/* 4秒止める */
 		sleep(4);
