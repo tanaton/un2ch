@@ -111,10 +111,12 @@ static unh_t *get_server(bool flag)
 	bool ok = un2ch_get_server(get);
 
 	if(flag && (ok == false)){
+		un2ch_free(get);
 		return NULL;
 	}
 	bl = unstr_file_get_contents(get->board_list);
 	if(bl == NULL){
+		un2ch_free(get);
 		perror("板一覧ファイルが無いよ。\n");
 	}
 	hash = unh_init(8, 32, 2);
@@ -175,6 +177,7 @@ static unarray_t *get_board(un2ch_t *get, nich_t *nich)
 	if(unstr_empty(data)){
 		unstr_delete(4, data, p1, p2, filename);
 		unarray_free(tl, NULL);
+		unh_free(resmap);
 		printf("ita error\n");
 		return NULL;
 	}

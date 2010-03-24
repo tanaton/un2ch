@@ -523,13 +523,13 @@ static unstr_t* unstr_get_http_file(unstr_t *url, time_t *mod)
 	curl = curl_easy_init();
 	if(curl == NULL) return NULL;
 	/* データ格納用 */
-	getdata = unstr_init_memory(UN2CH_TCP_IP_FRAME_SIZE);
 	curl_easy_setopt(curl, CURLOPT_URL, url->data);
 	curl_easy_setopt(curl, CURLOPT_ENCODING, "gzip");
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	curl_easy_setopt(curl, CURLOPT_FILETIME, 1);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, returned_data);
+	getdata = unstr_init_memory(UN2CH_TCP_IP_FRAME_SIZE);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, getdata);
 	curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1);
 	/* データを取得する */
@@ -584,8 +584,6 @@ static unstr_t* request(un2ch_t *init, bool flag)
 	curl = curl_easy_init();
 	if(curl == NULL) return NULL;
 
-	/* レスポンス格納用 */
-	getdata = unstr_init_memory(UN2CH_TCP_IP_FRAME_SIZE);
 	/* スレッド一覧取得用header生成 */
 	tmp = unstr_init_memory(UN2CH_CHAR_LENGTH);
 
@@ -607,7 +605,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 			times = time(NULL);
 			if(st.st_mtime > times){
 				init->code = 302;
-				unstr_delete(2, tmp, getdata);
+				unstr_free(tmp);
 				curl_slist_free_all(header);
 				curl_easy_cleanup(curl);
 				return NULL;
@@ -643,7 +641,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 		curl_easy_setopt(curl, CURLOPT_URL, tmp->data);
 	} else {
 		init->code = 0;
-		unstr_delete(2, tmp, getdata);
+		unstr_free(tmp);
 		curl_slist_free_all(header); /* 現段階ではNULL */
 		curl_easy_cleanup(curl);
 		return NULL;
@@ -666,6 +664,8 @@ static unstr_t* request(un2ch_t *init, bool flag)
 
 	/* コールバック関数を指定 */
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, returned_data);
+	/* レスポンス格納用 */
+	getdata = unstr_init_memory(UN2CH_TCP_IP_FRAME_SIZE);
 	/* データの入れ物を設定 */
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, getdata);
 
@@ -740,7 +740,6 @@ static unstr_t* bourbon_request(un2ch_t *init)
 	/* TODO:スレッドセーフな乱数にしたい */
 	host = unstr_init(g_bourbon_url[clock() % 5]);
 
-	getdata = unstr_init_memory(UN2CH_TCP_IP_FRAME_SIZE);
 	tmp = unstr_init_memory(UN2CH_CHAR_LENGTH);
 
 	if(init->mode == UN2CH_MODE_THREAD){
@@ -770,7 +769,7 @@ static unstr_t* bourbon_request(un2ch_t *init)
 		curl_easy_setopt(curl, CURLOPT_URL, tmp->data);
 	} else {
 		init->code = 0;
-		unstr_delete(2, tmp, getdata);
+		unstr_free(tmp);
 		curl_slist_free_all(header); /* 現段階ではNULL */
 		curl_easy_cleanup(curl);
 		return NULL;
@@ -784,6 +783,7 @@ static unstr_t* bourbon_request(un2ch_t *init)
 	/* 400以上のステータスが帰ってきたら本文は取得しない */
 	curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, returned_data);
+	getdata = unstr_init_memory(UN2CH_TCP_IP_FRAME_SIZE);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, getdata);
 	res = curl_easy_perform(curl);
 	curl_slist_free_all(header);
