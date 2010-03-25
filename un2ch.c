@@ -25,6 +25,7 @@ static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag);
 static bool file_exists(unstr_t *filename, struct stat *data);
 static void touch(unstr_t *filename, time_t atime, time_t mtime);
 static void make_dir(un2ch_t *init);
+static bool make_dir_all(unstr_t *path);
 
 static const char *g_sabakill[11] = {
 	"www.2ch.net",
@@ -843,36 +844,18 @@ static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag)
 static void make_dir(un2ch_t *init)
 {
 	/* フォルダの確認＆作成 */
-	int mode = 0755;
-	unstr_t *path1 = 0;
-	unstr_t *path2 = 0;
-	unstr_t *path3 = 0;
-	path1 = unstr_sprintf(NULL, "%$/%$",
-		init->folder, init->server);
-	path2 = unstr_sprintf(NULL, "%$/%$/%$",
-		init->folder, init->server, init->board);
+	unstr_t *path = 0;
 	if(init->mode == UN2CH_MODE_THREAD){
-		path3 = unstr_sprintf(NULL, "%$/%$/%$/%$",
+		path = unstr_sprintf(NULL, "%$/%$/%$/%$",
 			init->folder, init->server, init->board, init->thread_index);
-	}
-
-	if(file_exists(path1, NULL)){
-		if(file_exists(path2, NULL)){
-			if(path3){
-				if(!file_exists(path3, NULL)){
-					mkdir(path3->data, mode);
-				}
-			}
-		} else {
-			mkdir(path2->data, mode);
-			if(path3) mkdir(path3->data, mode);
-		}
+	} else if(init->mode == UN2CH_MODE_BOARD){
+		path = unstr_sprintf(NULL, "%$/%$/%$",
+			init->folder, init->server, init->board);
 	} else {
-		mkdir(path1->data, mode);
-		mkdir(path2->data, mode);
-		if(path3) mkdir(path3->data, mode);
+		return;
 	}
-	unstr_delete(3, path1, path2, path3);
+	make_dir_all(path);
+	unstr_free(path);
 }
 
 static bool make_dir_all(unstr_t *path)
@@ -881,17 +864,28 @@ static bool make_dir_all(unstr_t *path)
 	unstr_t *p1 = 0;
 	unstr_t *p2 = 0;
 	unstr_t *create = 0;
+	unstr_t *tmp = 0;
+	size_t count = 0;
 	if(file_exists(path, NULL)){
 		return false;
 	}
 	p1 = unstr_init_memory(16);
 	p2 = unstr_init_memory(32);
 	create = unstr_init_memory(32);
-	while(unstr_sscanf(path, "/$/$", p1, p2) == 2){
+	tmp = unstr_copy(path);
+	/* 下から順番に確認 */
+	while((count = unstr_sscanf(tmp, "/$/$", p1, p2)) > 0){
 		unstr_strcat_char(create, "/");
 		unstr_strcat(create, p1);
 		if(!file_exists(create, NULL)){
 			mkdir(create->data, mode);
 		}
+		if(count == 2){
+			unstr_sprintf(tmp, "/%$", p2);
+		} else {
+			break;
+		}
 	}
+	unstr_delete(4, p1, p2, tmp, create);
+	return true;
 }
