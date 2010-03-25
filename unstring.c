@@ -124,6 +124,8 @@ void unstr_free_func(unstr_t *str)
 	if(str != NULL){
 		free(str->data);
 		str->data = NULL;
+		str->length = 0;
+		str->heap = 0;
 	}
 	free(str);
 }
@@ -409,6 +411,7 @@ unstr_t *unstr_sprintf(unstr_t *str, const char *format, ...)
 	unstr_t *unsp = 0;
 	char *sp = 0;
 	int ip = 0;
+	size_t i = 0;
 	va_start(list, format);
 	if(unstr_isset(str)){
 		unstr_zero(str);
@@ -441,8 +444,7 @@ unstr_t *unstr_sprintf(unstr_t *str, const char *format, ...)
 				unstr_strcat(str, unsp);
 				unstr_free(unsp);
 				break;
-			case 'X': {
-				size_t i = 0;
+			case 'X':
 				ip = va_arg(list, int);
 				unsp = unstr_itoa(ip, 16);
 				for(i = 0; i < unsp->length; i++){
@@ -451,7 +453,6 @@ unstr_t *unstr_sprintf(unstr_t *str, const char *format, ...)
 				unstr_strcat(str, unsp);
 				unstr_free(unsp);
 				break;
-			}
 			default:
 				format--;
 				break;
@@ -681,7 +682,11 @@ unstr_bool_t unstr_file_put_contents(unstr_t *filename, unstr_t *data, const cha
 {
 	size_t size = 0;
 	FILE *fp = fopen(filename->data, mode);
-	if((fp == NULL) || unstr_empty(data)){
+	if(fp == NULL){
+		return UNSTRING_FALSE;
+	}
+	if(unstr_empty(data)){
+		fclose(fp);
 		return UNSTRING_FALSE;
 	}
 	ftell(fp);

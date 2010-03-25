@@ -301,6 +301,12 @@ static unstr_t* normal_data(un2ch_t *init)
 				}
 			}
 			break;
+		case 0:
+			unstr_free(data);
+			if((data = unstr_file_get_contents(logfile)) != NULL){
+				init->byte = data->length;
+			}
+			break;
 		default:
 			unstr_free(data);
 			if((data = unstr_file_get_contents(logfile)) != NULL){
@@ -328,6 +334,12 @@ static unstr_t* normal_data(un2ch_t *init)
 		case 404:
 			unstr_free(data);
 			un2ch_get_server(init);
+			break;
+		case 0:
+			unstr_free(data);
+			if((data = unstr_file_get_contents(logfile)) != NULL){
+				init->byte = data->length;
+			}
 			break;
 		default:
 			unstr_free(data);
@@ -384,7 +396,7 @@ bool un2ch_get_server(un2ch_t *init)
 	unstr_t *p1 = 0;
 	unstr_t *p2 = 0;
 	unstr_t *p3 = 0;
-	unstr_t *writedata = unstr_init_memory(UN2CH_CHAR_LENGTH);
+	unstr_t *writedata = 0;
 	unstr_t *list = 0;
 	unstr_t *tmp = unstr_init(UN2CH_BBS_DATA_URL);
 	unstr_t *line = 0;
@@ -404,6 +416,7 @@ bool un2ch_get_server(un2ch_t *init)
 		}
 	}
 	
+	writedata = unstr_init_memory(UN2CH_CHAR_LENGTH);
 	p1 = unstr_init_memory(UN2CH_CHAR_LENGTH);
 	p2 = unstr_init_memory(UN2CH_CHAR_LENGTH);
 	p3 = unstr_init_memory(UN2CH_CHAR_LENGTH);
@@ -496,7 +509,7 @@ unstr_t* un2ch_get_board_name(un2ch_t *init)
 	/* HTTP接続で設定ファイル取得 */
 	data = unstr_get_http_file(url, NULL);
 	if(unstr_empty(data)){
-		unstr_delete(2, set, url);
+		unstr_delete(3, set, url, data);
 		return NULL;
 	}
 
