@@ -211,6 +211,22 @@ size_t unstr_strlen(unstr_t *str)
 	return 0;
 }
 
+//! 文字列のコピーを返す。領域の大きさもある程度揃える
+/*!
+ * \param[in] str コピー元
+ * \return コピーした文字列
+ * \public
+ */
+unstr_t *unstr_copy(unstr_t *str)
+{
+	unstr_t *data = 0;
+	if(unstr_isset(str)){
+		data = unstr_init_memory(str->heap);
+		unstr_strcpy(data, str);
+	}
+	return data;
+}
+
 //! 文字列をコピーする。
 /*!
  * \param[in,out] s1 コピー先
@@ -359,7 +375,7 @@ unstr_t **unstr_split(unstr_t *str, const char *tmp, size_t *len)
 	if(unstr_empty(str) || tmp == NULL || len == NULL){
 		return NULL;
 	}
-	data = unstr_init(str->data);
+	data = unstr_copy(str);
 
 	s = unstr_strtok(data, tmp, &size);
 	if(s != NULL){

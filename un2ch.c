@@ -13,7 +13,7 @@
 static bool in_array(const char *str, const char **array, size_t size);
 static bool set_thread(un2ch_t *init, unstr_t *unstr);
 static bool server_check(unstr_t *str);
-static bool mode_change(un2ch_t *init);
+static un2ch_code_t mode_change(un2ch_t *init);
 static unstr_t* normal_data(un2ch_t *init);
 static unstr_t* request(un2ch_t *init, bool flag);
 static size_t returned_data(void *ptr, size_t size, size_t nmemb, void *data);
@@ -24,7 +24,7 @@ static unstr_t* unstr_get_http_file(unstr_t *url, time_t *mod);
 static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag);
 static bool file_exists(unstr_t *filename, struct stat *data);
 static void touch(unstr_t *filename, time_t atime, time_t mtime);
-static void make_folder(un2ch_t *init);
+static void make_dir(un2ch_t *init);
 
 static const char *g_sabakill[11] = {
 	"www.2ch.net",
@@ -56,6 +56,7 @@ static const char g_nagoya[] = { 0x96, 0xBC, 0x8C, 0xC3, 0x89, 0xAE, 0x82, 0xCD,
 un2ch_t* un2ch_init(void)
 {
 	un2ch_t *init = malloc(sizeof(un2ch_t));
+	if(init == NULL) perror("un2ch_init error\n");
 	memset(init, 0, sizeof(un2ch_t));
 	init->byte = 0;						/* datのデータサイズ */
 	init->mod = 0;						/* datの最終更新時間 */
@@ -135,14 +136,12 @@ static bool server_check(unstr_t *str)
 	return false;
 }
 
-static bool mode_change(un2ch_t *init)
+static un2ch_code_t mode_change(un2ch_t *init)
 {
 	un2ch_code_t ret = UN2CH_OK;
 	if((!unstr_empty(init->thread_number)) &&
 	   (!unstr_empty(init->board)) &&
 	   (!unstr_empty(init->server))){
-		unstr_sprintf(init->thread, "%$.dat", init->thread_number);
-		unstr_substr(init->thread_index, init->thread_number, 4);
 		unstr_sprintf(init->logfile, "%$/%$/%$/%$/%$",
 			init->folder, init->server, init->board, init->thread_index, init->thread);
 		init->mode = UN2CH_MODE_THREAD;
@@ -201,27 +200,27 @@ un2ch_code_t un2ch_setopt(un2ch_t *init, un2chopt_t opt, ...)
 	switch(opt){
 	case UN2CHOPT_SERVER:
 		unstr = va_arg(list, unstr_t *);
-		unstr_strcat(init->server, unstr);
+		unstr_strcpy(init->server, unstr);
 		break;
 	case UN2CHOPT_SERVER_CHAR:
 		str = va_arg(list, char *);
-		unstr_strcat_char(init->server, str);
+		unstr_strcpy_char(init->server, str);
 		break;
 	case UN2CHOPT_BOARD:
 		unstr = va_arg(list, unstr_t *);
-		unstr_strcat(init->board, unstr);
+		unstr_strcpy(init->board, unstr);
 		break;
 	case UN2CHOPT_BOARD_CHAR:
 		str = va_arg(list, char *);
-		unstr_strcat_char(init->board, str);
+		unstr_strcpy_char(init->board, str);
 		break;
 	case UN2CHOPT_THREAD:
 		unstr = va_arg(list, unstr_t *);
-		unstr_strcat(init->thread_number, unstr);
+		unstr_strcpy(init->thread_number, unstr);
 		break;
 	case UN2CHOPT_THREAD_CHAR:
 		str = va_arg(list, char *);
-		unstr_strcat_char(init->thread_number, str);
+		unstr_strcpy_char(init->thread_number, str);
 		break;
 	default:
 		ret = UN2CH_NOACCESS;
@@ -500,7 +499,7 @@ unstr_t* un2ch_get_board_name(un2ch_t *init)
 		return NULL;
 	}
 
-	make_folder(init);
+	make_dir(init);
 	unstr_file_put_contents(set, data, "w");
 	title = slice_board_name(data);
 	if(!unstr_empty(title)){
@@ -769,14 +768,13 @@ static unstr_t* bourbon_request(un2ch_t *init)
 		curl_easy_setopt(curl, CURLOPT_URL, tmp->data);
 	} else {
 		init->code = 0;
-		unstr_free(tmp);
+		unstr_delete(2, host, tmp);
 		curl_slist_free_all(header); /* 現段階ではNULL */
 		curl_easy_cleanup(curl);
 		return NULL;
 	}
 	/* 領域解放 */
-	unstr_free(tmp);
-	unstr_free(host);
+	unstr_delete(2, host, tmp);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
@@ -811,7 +809,7 @@ static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag)
 
 	switch(flag){
 	case UN2CH_CACHE_FOLDER:
-		make_folder(init);
+		make_dir(init);
 		break;
 	case UN2CH_CACHE_EDIT:
 		if(data->data[0] == '\n'){
@@ -820,7 +818,7 @@ static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag)
 		break;
 	case UN2CH_CACHE_OVERWRITE:
 		if(!file_exists(init->logfile, NULL)){
-			make_folder(init);
+			make_dir(init);
 		}
 		break;
 	default:
@@ -828,7 +826,7 @@ static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag)
 	}
 	
 	/* ファイルに書き込む */
-	if(data->length > 0){
+	if(!unstr_empty(data)){
 		if(flag == UN2CH_CACHE_EDIT){
 			unstr_file_put_contents(init->logfile, data, "a"); /* 追記 */
 		} else {
@@ -842,7 +840,7 @@ static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag)
 	return true;
 }
 
-static void make_folder(un2ch_t *init)
+static void make_dir(un2ch_t *init)
 {
 	/* フォルダの確認＆作成 */
 	int mode = 0755;
@@ -877,3 +875,23 @@ static void make_folder(un2ch_t *init)
 	unstr_delete(3, path1, path2, path3);
 }
 
+static bool make_dir_all(unstr_t *path)
+{
+	int mode = 0755;
+	unstr_t *p1 = 0;
+	unstr_t *p2 = 0;
+	unstr_t *create = 0;
+	if(file_exists(path, NULL)){
+		return false;
+	}
+	p1 = unstr_init_memory(16);
+	p2 = unstr_init_memory(32);
+	create = unstr_init_memory(32);
+	while(unstr_sscanf(path, "/$/$", p1, p2) == 2){
+		unstr_strcat_char(create, "/");
+		unstr_strcat(create, p1);
+		if(!file_exists(create, NULL)){
+			mkdir(create->data, mode);
+		}
+	}
+}

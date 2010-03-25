@@ -31,6 +31,7 @@ void unstr_zero(unstr_t *str);
 unstr_bool_t unstr_isset(unstr_t *str);
 unstr_bool_t unstr_empty(unstr_t *str);
 size_t unstr_strlen(unstr_t *str);
+unstr_t *unstr_copy(unstr_t *str);
 unstr_bool_t unstr_strcpy(unstr_t *s1, unstr_t *s2);
 unstr_bool_t unstr_strcpy_char(unstr_t *s1, const char *s2);
 unstr_bool_t unstr_substr(unstr_t *s1, unstr_t *s2, size_t len);

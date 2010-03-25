@@ -1,7 +1,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
-#include <unhash.h>
+#include <unmap.h>
 #include "un2ch.h"
 #include "unstring.h"
 #include "unarray.h"
@@ -20,9 +20,9 @@ typedef struct databox_st {
 static void *unmalloc(size_t size);
 static void sl_free(void *data);
 static void nich_free(void *p);
-static unh_t *get_server(bool flag);
+static unmap_t *get_server(bool flag);
 static unarray_t *get_board(un2ch_t *get, nich_t *nich);
-static unh_t *get_board_res(unstr_t *filename);
+static unmap_t *get_board_res(unstr_t *filename);
 static void get_thread(un2ch_t *get, unarray_t *tl);
 static void *mainThread(void *data);
 static void retryThread(databox_t *databox);
@@ -32,15 +32,15 @@ static bool g_stop_flag = false;
 
 int main(void)
 {
-	unh_t *sl = get_server(false);
+	unmap_t *sl = get_server(false);
 	databox_t *databox = 0;
-	unh_data_t *box = 0;
+	unmap_data_t *box = 0;
 	nich_t *nich = 0;
 	unarray_t *ar = 0;
-	size_t sl_len = unh_size(sl);
+	size_t sl_len = unmap_size(sl);
 	size_t i = 0;
 	for(i = 0; i < sl_len; i++){
-		box = unh_at(sl, i);
+		box = unmap_at(sl, i);
 		ar = box->data;
 		if(ar != NULL){
 			nich = unarray_at(ar, 0);
@@ -49,8 +49,10 @@ int main(void)
 				/* スレッド作成 */
 				databox = unmalloc(sizeof(databox_t));
 				databox->bl = ar;
-				databox->key = unstr_init(nich->server->data);
+				databox->key = unstr_copy(nich->server);
 				if(pthread_create(&tid, NULL, mainThread, databox)){
+					unstr_free(databox->key);
+					free(databox);
 					printf("%s スレッド生成エラー\n", nich->server->data);
 				}
 				databox = NULL;
@@ -67,7 +69,7 @@ int main(void)
 		pthread_mutex_unlock(&g_mutex);
 		sleep(600);
 	}
-	/* unh_free(sl); */
+	/* unmap_free(sl); */
 	return 0;
 }
 
@@ -97,12 +99,13 @@ static void nich_free(void *p)
 	free(nich);
 }
 
-static unh_t *get_server(bool flag)
+static unmap_t *get_server(bool flag)
 {
-	unh_t *hash = 0;
+	unmap_t *hash = 0;
 	un2ch_t *get = un2ch_init();
-	unh_data_t *p = 0;
+	unmap_data_t *p = 0;
 	unarray_t *list = 0;
+	nich_t *nich = 0;
 	unstr_t *bl = 0;
 	unstr_t *line = 0;
 	unstr_t *p1 = 0;
@@ -119,17 +122,17 @@ static unh_t *get_server(bool flag)
 		un2ch_free(get);
 		perror("板一覧ファイルが無いよ。\n");
 	}
-	hash = unh_init(8, 32, 2);
+	hash = unmap_init(8, 32, 2);
 	p1 = unstr_init_memory(32);
 	p2 = unstr_init_memory(32);
 	line = unstr_strtok(bl, "\n", &index);
 	while(line != NULL){
 		if(unstr_sscanf(line, "$/$<>", p1, p2) == 2){
-			nich_t *nich = unmalloc(sizeof(nich_t));
-			nich->server = unstr_init(p1->data);
-			nich->board = unstr_init(p2->data);
+			nich = unmalloc(sizeof(nich_t));
+			nich->server = unstr_copy(p1);
+			nich->board = unstr_copy(p2);
 			nich->thread = NULL;
-			p = unh_get(hash, p1->data, p1->length);
+			p = unmap_get(hash, nich->server->data, nich->server->length);
 			if(p->data == NULL){
 				list = unarray_init();
 				unarray_push(list, nich);
@@ -153,12 +156,13 @@ static unarray_t *get_board(un2ch_t *get, nich_t *nich)
 {
 	unstr_t *data = 0;
 	unarray_t *tl = 0;
+	nich_t *n = 0;
 	unstr_t *p1 = 0;
 	unstr_t *p2 = 0;
 	unstr_t *line = 0;
 	unstr_t *filename = 0;
-	unh_t *resmap = 0;
-	unh_data_t *box = 0;
+	unmap_t *resmap = 0;
+	unmap_data_t *box = 0;
 	size_t index = 0;
 	char *p = 0;
 	int nres = 0;
@@ -170,29 +174,29 @@ static unarray_t *get_board(un2ch_t *get, nich_t *nich)
 	p2 = unstr_init_memory(256);
 
 	un2ch_set_info(get, nich->server, nich->board, NULL);
-	filename = unstr_init(get->logfile->data);
+	filename = unstr_copy(get->logfile);
 	/* 必要箇所のみ更新するための準備 */
 	resmap = get_board_res(filename);
 	data = un2ch_get_data(get);
 	if(unstr_empty(data)){
 		unstr_delete(4, data, p1, p2, filename);
 		unarray_free(tl, NULL);
-		unh_free(resmap);
+		unmap_free(resmap);
 		printf("ita error\n");
 		return NULL;
 	}
 	line = unstr_strtok(data, "\n", &index);
 	while(line != NULL){
 		if(unstr_sscanf(line, "$.dat<>$", p1, p2) == 2){
-			nich_t *n = unmalloc(sizeof(nich_t));
-			n->server = unstr_init(nich->server->data);
-			n->board = unstr_init(nich->board->data);
-			n->thread = unstr_init(p1->data);
+			n = unmalloc(sizeof(nich_t));
+			n->server = unstr_copy(nich->server);
+			n->board = unstr_copy(nich->board);
+			n->thread = unstr_copy(p1);
 			if(resmap != NULL){
 				p = strrchr(p2->data, ' ');
 				/* +2は、空白と開きカッコをスキップ */
 				nres = (int)strtol(p + 2, NULL, 10);
-				box = unh_get(resmap, p1->data, p1->length);
+				box = unmap_get(resmap, p1->data, p1->length);
 				if(box->flag != nres){
 					/* レス数が違う */
 					unarray_push(tl, n);
@@ -209,15 +213,15 @@ static unarray_t *get_board(un2ch_t *get, nich_t *nich)
 		line = unstr_strtok(data, "\n", &index);
 	}
 	unstr_delete(5, data, p1, p2, line, filename);
-	unh_free(resmap);
+	unmap_free(resmap);
 	data = un2ch_get_board_name(get);
 	unstr_free(data);
 	return tl;
 }
 
-static unh_t *get_board_res(unstr_t *filename)
+static unmap_t *get_board_res(unstr_t *filename)
 {
-	unh_t *resmap = 0;
+	unmap_t *resmap = 0;
 	unstr_t *data = 0;
 	unstr_t *p1 = 0;
 	unstr_t *p2 = 0;
@@ -230,7 +234,7 @@ static unh_t *get_board_res(unstr_t *filename)
 	if(unstr_empty(data)){
 		return NULL;
 	}
-	resmap = unh_init(16, 128, 4);
+	resmap = unmap_init(16, 128, 4);
 	p1 = unstr_init_memory(32);
 	p2 = unstr_init_memory(128);
 	
@@ -239,7 +243,7 @@ static unh_t *get_board_res(unstr_t *filename)
 		if(unstr_sscanf(line, "$.dat<>$", p1, p2) == 2){
 			p = strrchr(p2->data, ' ');
 			nres = (int)strtol(p + 2, NULL, 10); /* +2は、空白と開きカッコをスキップ */
-			unh_set(resmap, p1->data, p1->length, NULL, nres, NULL);
+			unmap_set(resmap, p1->data, p1->length, NULL, nres, NULL);
 		}
 		unstr_free(line);
 		line = unstr_strtok(data, "\n", &index);
@@ -306,7 +310,7 @@ static void *mainThread(void *data)
 
 static void retryThread(databox_t *databox)
 {
-	unh_t *nsl = 0;
+	unmap_t *nsl = 0;
 	/* ロック */
 	pthread_mutex_lock(&g_mutex);
 	nsl = get_server(true);
@@ -315,11 +319,15 @@ static void retryThread(databox_t *databox)
 		/* スレッド作成 */
 		if(pthread_create(&tid, NULL, mainThread, databox)){
 			printf("%s スレッド生成エラー\n", databox->key->data);
+			unstr_free(databox->key);
+			free(databox);
 			g_stop_flag = true;
 		}
 	} else {
+		unstr_free(databox->key);
+		free(databox);
 		g_stop_flag = true;
-		unh_free(nsl);
+		unmap_free(nsl);
 	}
 	/* ロック解除 */
 	pthread_mutex_unlock(&g_mutex);

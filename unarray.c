@@ -50,12 +50,13 @@ void unarray_free_func(unarray_t *array, void (*free_func)(void *))
 {
 	int i = 0;
 	if(array != NULL){
-		for(i = 0; i < array->heap; i++){
+		for(i = 0; i < array->length; i++){
 			if(array->data[i] != NULL && free_func != NULL){
 				free_func(array->data[i]);
 			}
 		}
 		free(array->data);
+		array->data = NULL;
 		array->heap = 0;
 		array->length = 0;
 	}
