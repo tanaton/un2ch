@@ -2,10 +2,10 @@ PROGRAM = read2ch
 CC = gcc
 LINKER = gcc
 CFLAGS = -g -Wall
-X = -lcurl -lunmap -lpthread
+X = -lcurl -lpthread
 RM = rm -rf
 
-SRCS = read.c un2ch.c unstring.c unarray.c
+SRCS = read.c un2ch.c unstring.c unarray.c crc32.c unmap.c
 OBJS = $(SRCS:.c=.o)
 
 $(PROGRAM): $(OBJS)
