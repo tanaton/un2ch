@@ -11,10 +11,8 @@ OBJS = $(SRCS:.c=.o)
 $(PROGRAM): $(OBJS)
 	$(LINKER) $^ -o $(PROGRAM) $(CFLAGS) $(X)
 
-%.o : %.c
+%.o : %.c %.h
 	$(CC) -c $(CFLAGS) $*.c
-
-%.o : %.h
 
 .PHONY: clean
 clean:
