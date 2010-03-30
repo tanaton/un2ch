@@ -27,7 +27,8 @@ static void touch(unstr_t *filename, time_t atime, time_t mtime);
 static void make_dir(un2ch_t *init);
 static bool make_dir_all(unstr_t *path);
 
-static const char *g_sabakill[11] = {
+#define UN2CH_G_SABAKILL_SIZE		(11)
+static const char *g_sabakill[UN2CH_G_SABAKILL_SIZE] = {
 	"www.2ch.net",
 	"info.2ch.net",
 	"find.2ch.net",
@@ -41,7 +42,20 @@ static const char *g_sabakill[11] = {
 	"dubai.2ch.net"
 };
 
-static const char *g_bourbon_url[5] = {
+#define UN2CH_G_SABAFILTER_SIZE		(4)
+static char g_sabafilter[UN2CH_G_SABAFILTER_SIZE][25] = {
+	/* 他のサイト */
+	{ 0x91, 0xbc, 0x82, 0xcc, 0x83, 0x54, 0x83, 0x43, 0x83, 0x67, 0x00},
+	/* まちＢＢＳ */
+	{ 0x82, 0xdc, 0x82, 0xbf, 0x82, 0x61, 0x82, 0x61, 0x82, 0x72, 0x00},
+	/* ツール類 */
+	{ 0x83, 0x63, 0x81, 0x5b, 0x83, 0x8b, 0x97, 0xde, 0x00},
+	/* チャット２ｃｈ＠ＩＲＣ */
+	{ 0x83, 0x60, 0x83, 0x83, 0x83, 0x62, 0x83, 0x67, 0x82, 0x51, 0x82, 0x83, 0x82, 0x88, 0x81, 0x97, 0x82, 0x68, 0x82, 0x71, 0x82, 0x62, 0x00}
+};
+
+#define UN2CH_G_BOURBON_URL_SIZE		(5)
+static const char *g_bourbon_url[UN2CH_G_BOURBON_URL_SIZE] = {
 	"bg20.2ch.net",
 	"bg21.2ch.net",
 	"bg22.2ch.net",
@@ -183,7 +197,7 @@ un2ch_code_t un2ch_set_info(un2ch_t *init, unstr_t *server, unstr_t *board, unst
 	unstr_strcat(init->board, board);
 	if(!server_check(init->server)){
 		ret = UN2CH_NOSERVER;
-	} else if(in_array(init->server->data, g_sabakill, 11)){
+	} else if(in_array(init->server->data, g_sabakill, UN2CH_G_SABAKILL_SIZE)){
 		ret = UN2CH_NOACCESS;
 	} else {
 		if(thread_number){
@@ -408,6 +422,7 @@ bool un2ch_get_server(un2ch_t *init)
 	unstr_t *line = 0;
 	time_t mod = 0;
 	struct stat st;
+	const char *filter[UN2CH_G_SABAFILTER_SIZE];
 
 	line = unstr_get_http_file(tmp, &mod);
 	if(unstr_empty(line)){
@@ -422,6 +437,10 @@ bool un2ch_get_server(un2ch_t *init)
 		}
 	}
 	
+	filter[0] = g_sabafilter[0];
+	filter[1] = g_sabafilter[1];
+	filter[2] = g_sabafilter[2];
+	filter[3] = g_sabafilter[3];
 	writedata = unstr_init_memory(UN2CH_CHAR_LENGTH);
 	p1 = unstr_init_memory(UN2CH_CHAR_LENGTH);
 	p2 = unstr_init_memory(UN2CH_CHAR_LENGTH);
@@ -431,12 +450,14 @@ bool un2ch_get_server(un2ch_t *init)
 	unstr_zero(line);
 	while(list != NULL){
 		if(unstr_sscanf(list, "<B>$</B>", p1) == 1){
-			/* 書き込む */
-			unstr_strcat(line, p1);
-			unstr_strcat_char(line, "\n");
+			if(!in_array(p1->data, filter, UN2CH_G_SABAFILTER_SIZE)){
+				/* 書き込む */
+				unstr_strcat(line, p1);
+				unstr_strcat_char(line, "\n");
+			}
 		} else if(unstr_sscanf(list, "<A HREF=http://$/$/>$</A>", p1, p2, p3) == 3){
 			if((strstr(p1->data, ".2ch.net") != NULL) || (strstr(p1->data, ".bbspink.com") != NULL)){
-				if(!in_array(p1->data, g_sabakill, 11)){
+				if(!in_array(p1->data, g_sabakill, UN2CH_G_SABAKILL_SIZE)){
 					/* 書き込む */
 					unstr_sprintf(writedata, "%$/%$<>%$\n", p1, p2, p3);
 					unstr_strcat(line, writedata);
@@ -757,7 +778,7 @@ static unstr_t* bourbon_request(un2ch_t *init)
 	init->byte = 0;
 
 	/* TODO:スレッドセーフな乱数にしたい */
-	host = unstr_init(g_bourbon_url[clock() % 5]);
+	host = unstr_init(g_bourbon_url[clock() % UN2CH_G_BOURBON_URL_SIZE]);
 
 	tmp = unstr_init_memory(UN2CH_CHAR_LENGTH);
 
