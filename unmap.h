@@ -18,51 +18,51 @@
 
 #define unmap_free(unmap)	do { unmap_free_func(unmap); (unmap) = NULL; } while(0)
 
-/* 32(64)bitƒnƒbƒVƒ…’l */
+/* 32(64)bitãƒãƒƒã‚·ãƒ¥å€¤ */
 typedef unsigned long unmap_hash_t;
 
-/* ƒnƒbƒVƒ…’l‹l‚ß‡‚í‚¹ */
+/* ãƒãƒƒã‚·ãƒ¥å€¤è©°ã‚åˆã‚ã› */
 typedef struct unmap_box_st {
-	unmap_hash_t hash;	/* ƒnƒbƒVƒ…’l */
-	unmap_hash_t sum;	/* Šm”F—p */
-	unmap_hash_t node;	/* ƒm[ƒh’l(ƒnƒbƒVƒ…’l‚©‚çZo) */
+	unmap_hash_t hash;	/* ãƒãƒƒã‚·ãƒ¥å€¤ */
+	unmap_hash_t sum;	/* ç¢ºèªç”¨ */
+	unmap_hash_t node;	/* ãƒãƒ¼ãƒ‰å€¤(ãƒãƒƒã‚·ãƒ¥å€¤ã‹ã‚‰ç®—å‡º) */
 } unmap_box_t;
 
-/* –Ø\‘¢ */
+/* æœ¨æ§‹é€  */
 typedef struct unmap_tree_st {
-	void *tree[2];		/* }‚ğ“ñ‚Â‚Ü‚ÅŠÇ— */
+	void *tree[2];		/* æã‚’äºŒã¤ã¾ã§ç®¡ç† */
 } unmap_tree_t;
 
-/* ˜AŒ‹ƒŠƒXƒg */
+/* é€£çµãƒªã‚¹ãƒˆ */
 typedef struct unmap_data_st {
-	unmap_box_t box;				/* ƒnƒbƒVƒ…’l */
-	int flag;					/* ƒtƒŠ[(—p“r–³‚µ) */
-	void (*free_func)(void *);	/* ŠJ•ú—pŠÖ” */
-	void *data;					/* •Û‘¶ƒf[ƒ^ */
-	struct unmap_data_st *next;	/* Ÿ‚ÌƒŠƒXƒg */
+	unmap_box_t box;				/* ãƒãƒƒã‚·ãƒ¥å€¤ */
+	int flag;					/* ãƒ•ãƒªãƒ¼(ç”¨é€”ç„¡ã—) */
+	void (*free_func)(void *);	/* é–‹æ”¾ç”¨é–¢æ•° */
+	void *data;					/* ä¿å­˜ãƒ‡ãƒ¼ã‚¿ */
+	struct unmap_data_st *next;	/* æ¬¡ã®ãƒªã‚¹ãƒˆ */
 } unmap_data_t;
 
-/* ƒƒ‚ƒŠ‹óŠÔŠÇ— */
+/* ãƒ¡ãƒ¢ãƒªç©ºé–“ç®¡ç† */
 typedef struct unmap_storage_st {
-	void **heap;				/* ƒƒ‚ƒŠ */
-	size_t heap_size;			/* ˆê“x‚ÉŠm•Û‚·‚éƒTƒCƒY */
-	size_t array_size;			/* Šm•Û‚·‚éÅ‘å‰ñ” */
-	size_t length;				/* QÆ‚µ‚Ä‚¢‚éƒƒ‚ƒŠƒuƒƒbƒN */
-	size_t size_num;			/* QÆ‚µ‚Ä‚¢‚éƒƒ‚ƒŠƒAƒhƒŒƒX */
-	size_t type_size;			/* ŠÇ—‚·‚éŒ^‚ÌƒTƒCƒY */
+	void **heap;				/* ãƒ¡ãƒ¢ãƒª */
+	size_t heap_size;			/* ä¸€åº¦ã«ç¢ºä¿ã™ã‚‹ã‚µã‚¤ã‚º */
+	size_t array_size;			/* ç¢ºä¿ã™ã‚‹æœ€å¤§å›æ•° */
+	size_t length;				/* å‚ç…§ã—ã¦ã„ã‚‹ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒƒã‚¯ */
+	size_t size_num;			/* å‚ç…§ã—ã¦ã„ã‚‹ãƒ¡ãƒ¢ãƒªã‚¢ãƒ‰ãƒ¬ã‚¹ */
+	size_t type_size;			/* ç®¡ç†ã™ã‚‹å‹ã®ã‚µã‚¤ã‚º */
 } unmap_storage_t;
 
-/* unmapî•ñŠÇ— */
+/* unmapæƒ…å ±ç®¡ç† */
 typedef struct unmap_st {
-	unmap_storage_t *tree_heap;	/* ƒƒ‚ƒŠ‹óŠÔƒcƒŠ[—p */
-	unmap_storage_t *data_heap;	/* ƒƒ‚ƒŠ‹óŠÔƒf[ƒ^—p */
-	unmap_tree_t *tree;			/* Å‰‚Ì} */
-	unmap_data_t *cache[UNMAP_CACHE_SIZE + 1];	/* ƒLƒƒƒbƒVƒ… */
-	size_t max_level;			/* Å‘åŠK‘w */
-	jmp_buf j_buf;				/* ƒWƒƒƒ“ƒvƒoƒbƒtƒ@ */
+	unmap_storage_t *tree_heap;	/* ãƒ¡ãƒ¢ãƒªç©ºé–“ãƒ„ãƒªãƒ¼ç”¨ */
+	unmap_storage_t *data_heap;	/* ãƒ¡ãƒ¢ãƒªç©ºé–“ãƒ‡ãƒ¼ã‚¿ç”¨ */
+	unmap_tree_t *tree;			/* æœ€åˆã®æ */
+	unmap_data_t *cache[UNMAP_CACHE_SIZE + 1];	/* ã‚­ãƒ£ãƒƒã‚·ãƒ¥ */
+	size_t max_level;			/* æœ€å¤§éšå±¤ */
+	jmp_buf j_buf;				/* ã‚¸ãƒ£ãƒ³ãƒ—ãƒãƒƒãƒ•ã‚¡ */
 } unmap_t;
 
-/* ƒvƒƒgƒ^ƒCƒvéŒ¾ */
+/* ãƒ—ãƒ­ãƒˆã‚¿ã‚¤ãƒ—å®£è¨€ */
 unmap_t *unmap_init(size_t max_level, size_t tree_heap_size, size_t data_heap_size);
 void unmap_free_func(unmap_t *list);
 int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, int flag, void (*free_func)(void *));
