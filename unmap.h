@@ -16,17 +16,11 @@
 #define UNMAP_HEAP_ARRAY_SIZE		(16)
 #define UNMAP_CACHE_SIZE			(0x0F)
 
-#define unmap_free(unmap)	do { unmap_free_func(unmap); (unmap) = NULL; } while(0)
+#define unmap_free(unmap)			\
+	do { unmap_free_func(unmap); (unmap) = NULL; } while(0)
 
 /* 32(64)bitハッシュ値 */
 typedef unsigned long unmap_hash_t;
-
-/* ハッシュ値詰め合わせ */
-typedef struct unmap_box_st {
-	unmap_hash_t hash;	/* ハッシュ値 */
-	unmap_hash_t sum;	/* 確認用 */
-	unmap_hash_t node;	/* ノード値(ハッシュ値から算出) */
-} unmap_box_t;
 
 /* 木構造 */
 typedef struct unmap_tree_st {
@@ -35,7 +29,7 @@ typedef struct unmap_tree_st {
 
 /* 連結リスト */
 typedef struct unmap_data_st {
-	unmap_box_t box;				/* ハッシュ値 */
+	unmap_hash_t hash;			/* ハッシュ値 */
 	int flag;					/* フリー(用途無し) */
 	void (*free_func)(void *);	/* 開放用関数 */
 	void *data;					/* 保存データ */

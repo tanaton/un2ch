@@ -18,8 +18,8 @@ static void *unstr_malloc(size_t size)
 {
 	void *p = malloc(size);
 	if(p == NULL){
-		/*! 領域の確保に失敗した場合、perrorを呼び出し終了する。 */
-		perror("unstr_malloc");
+		/*! 領域の確保に失敗した場合、perrorを呼び出す。 */
+		perror("unstr_malloc:");
 	} else {
 		memset(p, UNSTRING_MEMORY_STAMP, size);
 	}
@@ -37,8 +37,8 @@ static void *unstr_realloc(void *p, size_t size, size_t len)
 {
 	p = realloc(p, size);
 	if(p == NULL){
-		/*! 領域の確保に失敗した場合、perrorを呼び出し終了する。 */
-		perror("unstr_realloc");
+		/*! 領域の確保に失敗した場合、perrorを呼び出す。 */
+		perror("unstr_realloc:");
 	} else {
 		len++;
 		if(size > len){

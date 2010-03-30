@@ -72,53 +72,14 @@ static unmap_hash_t crc32_table[UNMAP_CRC32_TABLE_SIZE] = {
 	0xBCB4666D, 0xB8757BDA, 0xB5365D03, 0xB1F740B4,
 };
 
-/* 素数テーブルその２ */
-static const unmap_hash_t primes_s[] = {
-	1,							/*	1			*/
-	1,							/*	2			*/
-	1,							/*	4			*/
-	1,							/*	8			*/
-	13,							/*	16			*/
-	31,							/*	32			*/
-	61,							/*	64			*/
-	127,						/*	128			*/
-	251,						/*	256			*/
-	509,						/*	512			*/
-	1021,						/*	1024		*/
-	2039,						/*	2048		*/
-	4093,						/*	4096		*/
-	8191,						/*	8192		*/
-	16381,						/*	16384		*/
-	32749,						/*	32768		*/
-	65633,						/*	65536		*/
-	131071,						/*	131072		*/
-	262139,						/*	262144		*/
-	524287,						/*	524288		*/
-	1048573,					/*	1048576		*/
-	2097143,					/*	2097152		*/
-	4194301,					/*	4194304		*/
-	8388593,					/*	8388608		*/
-	16777213,					/*	16777216	*/
-	33554393,					/*	33554432	*/
-	67108859,					/*	67108864	*/
-	134217689,					/*	134217728	*/
-	268435399,					/*	268435456	*/
-	536870909,					/*	536870912	*/
-	1073741789,					/*	1073741824	*/
-	2147483647,					/*	2147483648	*/
-	4294967291UL,				/*	4294967296	*/
-	1
-};
-
 /* hash値生成 */
-void unmap_hash_create(const char *str, size_t size, size_t max_level, unmap_box_t *box)
+unmap_hash_t unmap_hash_create(const char *str, size_t size)
 {
 	unmap_hash_t crc32 = 0xFFFFFFFFUL;
-	if(size == 0) return;
+	if(size == 0) return crc32;
 	while(size--){
 		crc32 = crc32_table[(crc32 >> ((sizeof(unmap_hash_t) * 8) - 8)) ^ *str++] ^ (crc32 << 8);
 	}
-	box->hash = crc32 ^ 0xFFFFFFFFUL;
-	box->node = crc32 % primes_s[max_level]; /* 素数で割る */
+	return (crc32 ^ 0xFFFFFFFFUL);
 }
 

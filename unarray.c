@@ -105,12 +105,12 @@ unarray_code_t unarray_insert(unarray_t *array, void *data, size_t at)
 {
 	if(array == NULL)		return UNARRAY_NULL;
 	if(array->data == NULL) return UNARRAY_NOTHING_DATA;
-	unarray_alloc_memory(array, 1);
 	if(at > array->length){
 		return UNARRAY_OVER_LENGTH;
 	} else if(at == array->length){
 		unarray_push(array, data);
 	} else {
+		unarray_alloc_memory(array, 1);
 		memmove(array->data + at + 1,
 				array->data + at,
 				unsizeof(array->length - at));
@@ -125,7 +125,6 @@ unarray_code_t unarray_delete(unarray_t *array, size_t at, void (*free_func)(voi
 	if(array == NULL)		return UNARRAY_NULL;
 	if(array->data == NULL) return UNARRAY_NOTHING_DATA;
 	if(at >= array->length) return UNARRAY_OVER_LENGTH;
-	unarray_alloc_memory(array, 1);
 	if(at == 0){
 		void *data = unarray_pop(array);
 		if(free_func){
