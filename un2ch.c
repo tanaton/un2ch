@@ -1,5 +1,5 @@
 #include <curl/curl.h>
-
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -57,7 +57,10 @@ static const char g_nagoya[] = { 0x96, 0xBC, 0x8C, 0xC3, 0x89, 0xAE, 0x82, 0xCD,
 un2ch_t* un2ch_init(void)
 {
 	un2ch_t *init = malloc(sizeof(un2ch_t));
-	if(init == NULL) perror("un2ch_init error\n");
+	if(init == NULL){
+		perror("un2ch_init:");
+		return NULL;
+	}
 	memset(init, 0, sizeof(un2ch_t));
 	init->byte = 0;						/* datのデータサイズ */
 	init->mod = 0;						/* datの最終更新時間 */
@@ -367,7 +370,10 @@ static unstr_t* bourbon_data(un2ch_t *init)
 	}
 
 	data = bourbon_request(init);
-	if(unstr_empty(data)) return NULL;
+	if(unstr_empty(data)){
+		unstr_free(data);	
+		return NULL;
+	}
 
 	tmp = unstr_substr_char(data->data, 256);
 	if((strstr(tmp->data, g_tanpan) != NULL) ||
@@ -891,7 +897,10 @@ static bool make_dir_all(unstr_t *path)
 		unstr_strcat_char(create, "/");
 		unstr_strcat(create, p1);
 		if(!file_exists(create, NULL)){
-			mkdir(create->data, mode);
+			if(mkdir(create->data, mode) != 0){
+				perror("make_dir_all:");
+				return false;
+			}
 		}
 		if(count == 2){
 			unstr_sprintf(tmp, "/%$", p2);

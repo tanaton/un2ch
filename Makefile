@@ -1,7 +1,7 @@
 PROGRAM = read2ch
 CC = gcc
 LINKER = gcc
-CFLAGS = -g -Wall
+CFLAGS = -O2 -Wall
 X = -lcurl -lpthread
 RM = rm -rf
 

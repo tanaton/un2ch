@@ -689,7 +689,7 @@ unstr_bool_t unstr_file_put_contents(unstr_t *filename, unstr_t *data, const cha
 		fclose(fp);
 		return UNSTRING_FALSE;
 	}
-	ftell(fp);
+	/* ftell(fp); */
 	size = fwrite(data->data, 1, data->length, fp);
 	fclose(fp);
 	return UNSTRING_TRUE;

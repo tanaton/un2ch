@@ -68,7 +68,6 @@ void unmap_free_func(unmap_t *list)
 {
 	size_t i = 0;
 	size_t j = 0;
-	size_t length = 0;
 	unmap_storage_t *st = 0;
 	unmap_data_t *data = 0;
 	if((list == NULL) || (list->tree == NULL)) return;
@@ -84,12 +83,7 @@ void unmap_free_func(unmap_t *list)
 	/* data開放 */
 	st = list->data_heap;
 	for(j = 0; j <= st->length; j++){
-		if(j == st->length){
-			length = st->size_num;
-		} else {
-			length = st->heap_size;
-		}
-		for(i = 0; i < length; i++){
+		for(i = 0; i < st->heap_size; i++){
 			data = (unmap_data_t *)((char *)st->heap[j] + (st->type_size * i));
 			if((data->data != NULL) && (data->free_func != NULL)){
 				/* データが格納されている and 関数が登録されいる */
