@@ -12,7 +12,7 @@
 #include "unmap.h"
 #include "crc32.h"
 
-/* ƒvƒƒgƒ^ƒCƒvéŒ¾ */
+/* ãƒ—ãƒ­ãƒˆã‚¿ã‚¤ãƒ—å®£è¨€ */
 static void *unmap_malloc(unmap_t *list, size_t size);
 static void *unmap_realloc(unmap_t *list, void *p, size_t size);
 static unmap_storage_t *unmap_storage_init(unmap_t *list, size_t tsize, size_t asize, size_t hsize);
@@ -22,40 +22,40 @@ static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_bo
 static void unmap_cache_set(unmap_t *list, unmap_data_t *data);
 static unmap_data_t *unmap_cache_get(unmap_t *list, unmap_box_t *box);
 
-/* unmap_tƒIƒuƒWƒFƒNƒg¶¬E‰Šú‰» */
+/* unmap_tã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆç”Ÿæˆãƒ»åˆæœŸåŒ– */
 unmap_t *unmap_init(size_t max_level, size_t tree_heap_size, size_t data_heap_size)
 {
 	unmap_t *list = 0;
 	if((max_level > sizeof(size_t) * 8) || (max_level < 4)){
-		/* 33bitˆÈã3bitˆÈ‰º‚Ìê‡ */
+		/* 33bitä»¥ä¸Š3bitä»¥ä¸‹ã®å ´åˆ */
 		return NULL;
 	}
-	/* ‰Šú’lİ’è */
+	/* åˆæœŸå€¤è¨­å®š */
 	if(tree_heap_size == 0){
 		tree_heap_size = 1024;
 	}
 	if(data_heap_size == 0){
 		data_heap_size = 512;
 	}
-	/* unmap_tƒIƒuƒWƒFƒNƒgŠm•Û */
+	/* unmap_tã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆç¢ºä¿ */
 	list = malloc(sizeof(unmap_t));
 	if(list == NULL){
 		perror("unmap_init");
 		return NULL;
 	}
-	/* ƒ[ƒƒNƒŠƒA‚µ‚Ä‚¨‚­ */
+	/* ã‚¼ãƒ­ã‚¯ãƒªã‚¢ã—ã¦ãŠã */
 	memset(list, 0, sizeof(unmap_t));
 
 	if(setjmp(list->j_buf) == 0){
-		/* tree—ÌˆæŠm•Û */
+		/* treeé ˜åŸŸç¢ºä¿ */
 		list->tree_heap = unmap_storage_init(list, sizeof(unmap_tree_t),
 			UNMAP_HEAP_ARRAY_SIZE, tree_heap_size);
 		list->tree = (unmap_tree_t *)(list->tree_heap->heap[0]);
 		list->tree_heap->size_num = 1;
-		/* data—ÌˆæŠm•Û */
+		/* dataé ˜åŸŸç¢ºä¿ */
 		list->data_heap = unmap_storage_init(list, sizeof(unmap_data_t),
 			UNMAP_HEAP_ARRAY_SIZE, data_heap_size);
-		/* Å‘å[“xƒZƒbƒg */
+		/* æœ€å¤§æ·±åº¦ã‚»ãƒƒãƒˆ */
 		list->max_level = max_level;
 	} else {
 		list = NULL;
@@ -63,7 +63,7 @@ unmap_t *unmap_init(size_t max_level, size_t tree_heap_size, size_t data_heap_si
 	return list;
 }
 
-/* unmap_tƒIƒuƒWƒFƒNƒgŠJ•ú */
+/* unmap_tã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆé–‹æ”¾ */
 void unmap_free_func(unmap_t *list)
 {
 	size_t i = 0;
@@ -71,7 +71,7 @@ void unmap_free_func(unmap_t *list)
 	unmap_storage_t *st = 0;
 	unmap_data_t *data = 0;
 	if((list == NULL) || (list->tree == NULL)) return;
-	/* treeŠJ•ú */
+	/* treeé–‹æ”¾ */
 	st = list->tree_heap;
 	for(i = 0; i <= st->length; i++){
 		free(st->heap[i]);
@@ -80,13 +80,13 @@ void unmap_free_func(unmap_t *list)
 	free(st->heap);
 	free(st);
 	list->tree_heap = NULL;
-	/* dataŠJ•ú */
+	/* dataé–‹æ”¾ */
 	st = list->data_heap;
 	for(j = 0; j <= st->length; j++){
 		for(i = 0; i < st->heap_size; i++){
 			data = (unmap_data_t *)((char *)st->heap[j] + (st->type_size * i));
 			if((data->data != NULL) && (data->free_func != NULL)){
-				/* ƒf[ƒ^‚ªŠi”[‚³‚ê‚Ä‚¢‚é and ŠÖ”‚ª“o˜^‚³‚ê‚¢‚é */
+				/* ãƒ‡ãƒ¼ã‚¿ãŒæ ¼ç´ã•ã‚Œã¦ã„ã‚‹ and é–¢æ•°ãŒç™»éŒ²ã•ã‚Œã„ã‚‹ */
 				data->free_func(data->data);
 				data->data = NULL;
 			}
@@ -97,11 +97,11 @@ void unmap_free_func(unmap_t *list)
 	free(st->heap);
 	free(st);
 	list->data_heap = NULL;
-	/* unmap_tŠJ•ú */
+	/* unmap_té–‹æ”¾ */
 	free(list);
 }
 
-/* unmap_tƒIƒuƒWƒFƒNƒg‚É’l‚ğƒZƒbƒg‚·‚é */
+/* unmap_tã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã«å€¤ã‚’ã‚»ãƒƒãƒˆã™ã‚‹ */
 int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, int flag, void (*free_func)(void *))
 {
 	unmap_data_t *tmp = 0;
@@ -109,29 +109,29 @@ int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, int f
 	if((list == NULL) || (key == NULL) || (key_size == 0)){
 		return -1;
 	}
-	/* hash‚ğŒvZ‚·‚é */
+	/* hashã‚’è¨ˆç®—ã™ã‚‹ */
 	unmap_hash_create(key, key_size, list->max_level, &box);
 	if(setjmp(list->j_buf) == 0){
 		tmp = unmap_area_get(list, list->tree, &box, list->max_level);
 		if(tmp->box.hash != box.hash){
-			/* ˜AŒ‹ƒŠƒXƒg‚ğ‚½‚Ç‚é */
+			/* é€£çµãƒªã‚¹ãƒˆã‚’ãŸã©ã‚‹ */
 			tmp = unmap_data_next(list, tmp, &box);
 		}
 	} else {
 		return -1;
 	}
 	if((tmp->data != NULL) && (tmp->free_func != NULL)){
-		/* ‚·‚Å‚Éƒf[ƒ^‚ªŠi”[‚³‚ê‚Ä‚¢‚éê‡AŠJ•ú‚·‚é */
+		/* ã™ã§ã«ãƒ‡ãƒ¼ã‚¿ãŒæ ¼ç´ã•ã‚Œã¦ã„ã‚‹å ´åˆã€é–‹æ”¾ã™ã‚‹ */
 		tmp->free_func(tmp->data);
 	}
 	tmp->data = data;
 	tmp->flag = flag;
 	tmp->free_func = free_func;
-	unmap_cache_set(list, tmp);	/* ƒLƒƒƒbƒVƒ…‚·‚é */
+	unmap_cache_set(list, tmp);	/* ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã™ã‚‹ */
 	return 0;
 }
 
-/* unmap_tƒIƒuƒWƒFƒNƒg‚©‚ç’l‚ğæ“¾ */
+/* unmap_tã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‹ã‚‰å€¤ã‚’å–å¾— */
 unmap_data_t *unmap_get(unmap_t *list, const char *key, size_t key_size)
 {
 	unmap_data_t *data = 0;
@@ -139,19 +139,19 @@ unmap_data_t *unmap_get(unmap_t *list, const char *key, size_t key_size)
 	if((list == NULL) || (key == NULL) || (key_size == 0)){
 		return NULL;
 	}
-	/* hash‚ğŒvZ‚·‚é */
+	/* hashã‚’è¨ˆç®—ã™ã‚‹ */
 	unmap_hash_create(key, key_size, list->max_level, &box);
-	/* ƒLƒƒƒbƒVƒ…‚©‚ç’Tõ */
+	/* ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã‹ã‚‰æ¢ç´¢ */
 	data = unmap_cache_get(list, &box);
 	if(data == NULL){
-		/* unmap_tƒcƒŠ[‚©‚ç’Tõ */
+		/* unmap_tãƒ„ãƒªãƒ¼ã‹ã‚‰æ¢ç´¢ */
 		if(setjmp(list->j_buf) == 0){
 			data = unmap_area_get(list, list->tree, &box, list->max_level);
 			if(data->box.hash != box.hash){
-				/* ˜AŒ‹ƒŠƒXƒgã‚ğ’Tõ */
+				/* é€£çµãƒªã‚¹ãƒˆä¸Šã‚’æ¢ç´¢ */
 				data = unmap_data_next(list, data, &box);
 			}
-			unmap_cache_set(list, data);	/* ƒLƒƒƒbƒVƒ…‚·‚é */
+			unmap_cache_set(list, data);	/* ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã™ã‚‹ */
 		} else {
 			return NULL;
 		}
@@ -159,7 +159,7 @@ unmap_data_t *unmap_get(unmap_t *list, const char *key, size_t key_size)
 	return data;
 }
 
-/* Ši”[‚µ‚Ä‚¢‚éƒf[ƒ^”‚ğ•Ô‚· */
+/* æ ¼ç´ã—ã¦ã„ã‚‹ãƒ‡ãƒ¼ã‚¿æ•°ã‚’è¿”ã™ */
 size_t unmap_size(unmap_t *list)
 {
 	unmap_storage_t *st = 0;
@@ -172,7 +172,7 @@ size_t unmap_size(unmap_t *list)
 	return size;
 }
 
-/* —v‘f”w’èæ“¾ */
+/* è¦ç´ æ•°æŒ‡å®šå–å¾— */
 unmap_data_t *unmap_at(unmap_t *list, size_t at)
 {
 	unmap_storage_t *st = 0;
@@ -183,7 +183,7 @@ unmap_data_t *unmap_at(unmap_t *list, size_t at)
 	char *p = 0;
 
 	if(at < size){
-		/* Ši”[”‚æ‚è‚à­‚È‚¢ê‡ */
+		/* æ ¼ç´æ•°ã‚ˆã‚Šã‚‚å°‘ãªã„å ´åˆ */
 		st = list->data_heap;
 		i = at / st->heap_size;
 		j = at % st->heap_size;
@@ -195,7 +195,7 @@ unmap_data_t *unmap_at(unmap_t *list, size_t at)
 	return data;
 }
 
-/* ƒGƒ‰[ˆ—•t‚«malloc */
+/* ã‚¨ãƒ©ãƒ¼å‡¦ç†ä»˜ãmalloc */
 static void *unmap_malloc(unmap_t *list, size_t size)
 {
 	void *p = malloc(size);
@@ -207,7 +207,7 @@ static void *unmap_malloc(unmap_t *list, size_t size)
 	return p;
 }
 
-/* ƒGƒ‰[ˆ—•t‚«realloc */
+/* ã‚¨ãƒ©ãƒ¼å‡¦ç†ä»˜ãrealloc */
 static void *unmap_realloc(unmap_t *list, void *p, size_t size)
 {
 	p = realloc(p, size);
@@ -219,99 +219,99 @@ static void *unmap_realloc(unmap_t *list, void *p, size_t size)
 	return p;
 }
 
-/* ƒXƒgƒŒ[ƒW‰Šú‰» */
+/* ã‚¹ãƒˆãƒ¬ãƒ¼ã‚¸åˆæœŸåŒ– */
 static unmap_storage_t *unmap_storage_init(unmap_t *list, size_t tsize, size_t asize, size_t hsize)
 {
 	unmap_storage_t *st = unmap_malloc(list, sizeof(unmap_storage_t));
 	memset(st, 0, sizeof(unmap_storage_t));
-	st->array_size = asize;	/* ˆê—ñ‚Ì’·‚³ */
-	st->heap_size = hsize;	/* ˆês‚Ì’·‚³(•s•Ï) */
-	st->type_size = tsize;	/* Œ^‚Ì‘å‚«‚³ */
+	st->array_size = asize;	/* ä¸€åˆ—ã®é•·ã• */
+	st->heap_size = hsize;	/* ä¸€è¡Œã®é•·ã•(ä¸å¤‰) */
+	st->type_size = tsize;	/* å‹ã®å¤§ãã• */
 	st->heap = unmap_malloc(list, sizeof(void *) * st->array_size);
 	st->heap[0] = unmap_malloc(list, st->type_size * st->heap_size);
 	memset(st->heap[0], 0, st->type_size * st->heap_size);
 	return st;
 }
 
-/* ƒXƒgƒŒ[ƒW‚ÌØ‚è•ª‚¯ */
+/* ã‚¹ãƒˆãƒ¬ãƒ¼ã‚¸ã®åˆ‡ã‚Šåˆ†ã‘ */
 static void *unmap_alloc(unmap_t *list, unmap_storage_t *st)
 {
 	char *p = 0;
 	if(st->size_num >= st->heap_size){
-		/* —pˆÓ‚µ‚½—Ìˆæ‚ğg‚¢Ø‚Á‚½ */
+		/* ç”¨æ„ã—ãŸé ˜åŸŸã‚’ä½¿ã„åˆ‡ã£ãŸ */
 		void *heap = 0;
-		st->size_num = 0;	/* æ“ª‚ğw‚µ’¼‚· */
-		st->length++;		/* Ÿ‚Ì—Ìˆæ‚Ö */
+		st->size_num = 0;	/* å…ˆé ­ã‚’æŒ‡ã—ç›´ã™ */
+		st->length++;		/* æ¬¡ã®é ˜åŸŸã¸ */
 		if(st->length >= st->array_size){
-			/* —ÌˆæŠÇ—”z—ñ‚ğŠg’£‚·‚é */
+			/* é ˜åŸŸç®¡ç†é…åˆ—ã‚’æ‹¡å¼µã™ã‚‹ */
 			st->array_size *= 2;
 			st->heap = unmap_realloc(list, st->heap, sizeof(void *) * st->array_size);
 		}
-		/* V‚µ‚¢—Ìˆæ‚ğŠm•Û‚·‚é */
+		/* æ–°ã—ã„é ˜åŸŸã‚’ç¢ºä¿ã™ã‚‹ */
 		heap = unmap_malloc(list, st->type_size * st->heap_size);
 		memset(heap, 0, st->type_size * st->heap_size);
 		st->heap[st->length] = heap;
 	}
 	p = st->heap[st->length];
-	/* g—p‚µ‚Ä‚¢‚È‚¢—Ìˆæ‚ğ•Ô‚· */
+	/* ä½¿ç”¨ã—ã¦ã„ãªã„é ˜åŸŸã‚’è¿”ã™ */
 	return p + (st->type_size * st->size_num++);
 }
 
-/* unmap_tƒcƒŠ[‚ğ¶¬A’l‚ÌŠi”[êŠ‚ğ—pˆÓ */
+/* unmap_tãƒ„ãƒªãƒ¼ã‚’ç”Ÿæˆã€å€¤ã®æ ¼ç´å ´æ‰€ã‚’ç”¨æ„ */
 static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box_t *box, size_t level)
 {
 	size_t rl = 0;
 	size_t node = box->node;
 	unmap_data_t *data = 0;
 	while(--level){
-		rl = (node >> level) & 0x01;	/* •ûŒü‘I‘ğ */
+		rl = (node >> level) & 0x01;	/* æ–¹å‘é¸æŠ */
 		if(tree->tree[rl] == NULL){
 			tree->tree[rl] = (unmap_tree_t *)unmap_alloc(list, list->tree_heap);
 		}
 		tree = tree->tree[rl];
 	}
-	rl = node & 0x01;	/* •ûŒü‘I‘ğ */
-	/* Å[•” */
+	rl = node & 0x01;	/* æ–¹å‘é¸æŠ */
+	/* æœ€æ·±éƒ¨ */
 	data = tree->tree[rl];
 	if(data == NULL){
-		/* unmap_data_tƒIƒuƒWƒFƒNƒg¶¬ */
+		/* unmap_data_tã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆç”Ÿæˆ */
 		data = (unmap_data_t *)unmap_alloc(list, list->data_heap);
 		data->box = *box;
 		tree->tree[rl] = data;
 	}
-	/* unmap_data_tƒIƒuƒWƒFƒNƒg‚ğ•Ô‚· */
+	/* unmap_data_tã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã‚’è¿”ã™ */
 	return data;
 }
 
-/* ˜AŒ‹ƒŠƒXƒg‚ğ‚½‚Ç‚é */
+/* é€£çµãƒªã‚¹ãƒˆã‚’ãŸã©ã‚‹ */
 static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_box_t *box)
 {
 	unmap_data_t *tmp = data->next;
 	unmap_data_t *back = data;
 	while(tmp != NULL){
 		if(tmp->box.hash == box->hash){
-			/* ‚»‚ê‚Á‚Û‚¢‚à‚Ì‚ğ”­Œ© */
+			/* ãã‚Œã£ã½ã„ã‚‚ã®ã‚’ç™ºè¦‹ */
 			return tmp;
 		} else {
-			/* Ÿ‚Ö */
+			/* æ¬¡ã¸ */
 			back = tmp;
 			tmp = tmp->next;
 		}
 	}
-	/* unmap_data_tƒIƒuƒWƒFƒNƒg¶¬ */
+	/* unmap_data_tã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆç”Ÿæˆ */
 	tmp = (unmap_data_t *)unmap_alloc(list, list->data_heap);
 	tmp->box = *box;
 	back->next = tmp;
 	return tmp;
 }
 
-/* ƒLƒƒƒbƒVƒ…‚ÉƒZƒbƒg‚·‚é */
+/* ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã«ã‚»ãƒƒãƒˆã™ã‚‹ */
 static void unmap_cache_set(unmap_t *list, unmap_data_t *data)
 {
 	list->cache[(data->box.node & UNMAP_CACHE_SIZE)] = data;
 }
 
-/* ƒLƒƒƒbƒVƒ…‚©‚ç’Tõ */
+/* ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã‹ã‚‰æ¢ç´¢ */
 static unmap_data_t *unmap_cache_get(unmap_t *list, unmap_box_t *box)
 {
 	unmap_data_t *data = list->cache[(box->node & UNMAP_CACHE_SIZE)];
