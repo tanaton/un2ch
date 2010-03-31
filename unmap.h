@@ -1,11 +1,3 @@
-/************************************************************
- * Copyright (C) 2009,  tanaton
- *
- * Filename:	unmap.h
- * Version:		0.10
- * Url:			http://d.hatena.ne.jp/heiwaboke/
-*************************************************************/
-
 #ifndef INCLUDE_UNMAP_H
 #define INCLUDE_UNMAP_H
 
@@ -22,6 +14,12 @@
 /* 32(64)bitハッシュ値 */
 typedef unsigned long unmap_hash_t;
 
+/* ハッシュ値詰め合わせ */
+typedef struct unmap_box_st {
+	unmap_hash_t hash;	/* ハッシュ値 */
+	unmap_hash_t node;	/* ノード値(ハッシュ値から算出) */
+} unmap_box_t;
+
 /* 木構造 */
 typedef struct unmap_tree_st {
 	void *tree[2];		/* 枝を二つまで管理 */
@@ -29,7 +27,7 @@ typedef struct unmap_tree_st {
 
 /* 連結リスト */
 typedef struct unmap_data_st {
-	unmap_hash_t hash;			/* ハッシュ値 */
+	unmap_box_t box;				/* ハッシュ値 */
 	int flag;					/* フリー(用途無し) */
 	void (*free_func)(void *);	/* 開放用関数 */
 	void *data;					/* 保存データ */

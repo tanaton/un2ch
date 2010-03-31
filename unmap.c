@@ -1,11 +1,3 @@
-/************************************************************
- * Copyright (C) 2009,  tanaton
- *
- * Filename:	unmap.c
- * Version:		0.10
- * Url:			http://d.hatena.ne.jp/heiwaboke/
-*************************************************************/
-
 #include <stdio.h>
 #include <string.h>
 
@@ -17,10 +9,10 @@ static void *unmap_malloc(unmap_t *list, size_t size);
 static void *unmap_realloc(unmap_t *list, void *p, size_t size);
 static unmap_storage_t *unmap_storage_init(unmap_t *list, size_t tsize, size_t asize, size_t hsize);
 static void *unmap_alloc(unmap_t *list, unmap_storage_t *st);
-static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_hash_t hash, size_t level);
-static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_hash_t hash);
+static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box_t *box, size_t level);
+static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_box_t *box);
 static void unmap_cache_set(unmap_t *list, unmap_data_t *data);
-static unmap_data_t *unmap_cache_get(unmap_t *list, unmap_hash_t hash);
+static unmap_data_t *unmap_cache_get(unmap_t *list, unmap_box_t *box);
 
 /* unmap_tオブジェクト生成・初期化 */
 unmap_t *unmap_init(size_t max_level, size_t tree_heap_size, size_t data_heap_size)
@@ -105,17 +97,17 @@ void unmap_free_func(unmap_t *list)
 int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, int flag, void (*free_func)(void *))
 {
 	unmap_data_t *tmp = 0;
-	unmap_hash_t hash = 0;
+	unmap_box_t box = {0};
 	if((list == NULL) || (key == NULL) || (key_size == 0)){
 		return -1;
 	}
 	/* hashを計算する */
-	hash = unmap_hash_create(key, key_size);
+	unmap_hash_create(key, key_size, list->max_level, &box);
 	if(setjmp(list->j_buf) == 0){
-		tmp = unmap_area_get(list, list->tree, hash, list->max_level);
-		if(tmp->hash != hash){
+		tmp = unmap_area_get(list, list->tree, &box, list->max_level);
+		if(tmp->box.hash != box.hash){
 			/* 連結リストをたどる */
-			tmp = unmap_data_next(list, tmp, hash);
+			tmp = unmap_data_next(list, tmp, &box);
 		}
 	} else {
 		return -1;
@@ -135,21 +127,21 @@ int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, int f
 unmap_data_t *unmap_get(unmap_t *list, const char *key, size_t key_size)
 {
 	unmap_data_t *data = 0;
-	unmap_hash_t hash = 0;
+	unmap_box_t box = {0};
 	if((list == NULL) || (key == NULL) || (key_size == 0)){
 		return NULL;
 	}
 	/* hashを計算する */
-	hash = unmap_hash_create(key, key_size);
+	unmap_hash_create(key, key_size, list->max_level, &box);
 	/* キャッシュから探索 */
-	data = unmap_cache_get(list, hash);
+	data = unmap_cache_get(list, &box);
 	if(data == NULL){
 		/* unmap_tツリーから探索 */
 		if(setjmp(list->j_buf) == 0){
-			data = unmap_area_get(list, list->tree, hash, list->max_level);
-			if(data->hash != hash){
+			data = unmap_area_get(list, list->tree, &box, list->max_level);
+			if(data->box.hash != box.hash){
 				/* 連結リスト上を探索 */
-				data = unmap_data_next(list, data, hash);
+				data = unmap_data_next(list, data, &box);
 			}
 			unmap_cache_set(list, data);	/* キャッシュする */
 		} else {
@@ -258,24 +250,25 @@ static void *unmap_alloc(unmap_t *list, unmap_storage_t *st)
 }
 
 /* unmap_tツリーを生成、値の格納場所を用意 */
-static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_hash_t hash, size_t level)
+static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box_t *box, size_t level)
 {
 	size_t rl = 0;
+	size_t node = box->node;
 	unmap_data_t *data = 0;
 	while(--level){
-		rl = (hash >> level) & 0x01;	/* 方向選択 */
+		rl = (node >> level) & 0x01;	/* 方向選択 */
 		if(tree->tree[rl] == NULL){
 			tree->tree[rl] = (unmap_tree_t *)unmap_alloc(list, list->tree_heap);
 		}
 		tree = tree->tree[rl];
 	}
-	rl = hash & 0x01;	/* 方向選択 */
+	rl = node & 0x01;	/* 方向選択 */
 	/* 最深部 */
 	data = tree->tree[rl];
 	if(data == NULL){
 		/* unmap_data_tオブジェクト生成 */
 		data = (unmap_data_t *)unmap_alloc(list, list->data_heap);
-		data->hash = hash;
+		data->box = *box;
 		tree->tree[rl] = data;
 	}
 	/* unmap_data_tオブジェクトを返す */
@@ -283,12 +276,12 @@ static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_has
 }
 
 /* 連結リストをたどる */
-static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_hash_t hash)
+static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_box_t *box)
 {
 	unmap_data_t *tmp = data->next;
 	unmap_data_t *back = data;
 	while(tmp != NULL){
-		if(tmp->hash == hash){
+		if(tmp->box.hash == box->hash){
 			/* それっぽいものを発見 */
 			return tmp;
 		} else {
@@ -299,6 +292,7 @@ static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_ha
 	}
 	/* unmap_data_tオブジェクト生成 */
 	tmp = (unmap_data_t *)unmap_alloc(list, list->data_heap);
+	tmp->box = *box;
 	back->next = tmp;
 	return tmp;
 }
@@ -306,14 +300,14 @@ static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_ha
 /* キャッシュにセットする */
 static void unmap_cache_set(unmap_t *list, unmap_data_t *data)
 {
-	list->cache[(data->hash & UNMAP_CACHE_SIZE)] = data;
+	list->cache[(data->box.node & UNMAP_CACHE_SIZE)] = data;
 }
 
 /* キャッシュから探索 */
-static unmap_data_t *unmap_cache_get(unmap_t *list, unmap_hash_t hash)
+static unmap_data_t *unmap_cache_get(unmap_t *list, unmap_box_t *box)
 {
-	unmap_data_t *data = list->cache[(hash & UNMAP_CACHE_SIZE)];
-	if((data == NULL) || (data->hash != hash)){
+	unmap_data_t *data = list->cache[(box->node & UNMAP_CACHE_SIZE)];
+	if((data == NULL) || (data->box.hash != box->hash)){
 		data = NULL;
 	}
 	return data;
