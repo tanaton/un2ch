@@ -5,8 +5,8 @@
 #include "crc32.h"
 
 /* プロトタイプ宣言 */
-static void *unmap_malloc(unmap_t *list, size_t size);
-static void *unmap_realloc(unmap_t *list, void *p, size_t size);
+static void *unmap_malloc(size_t size);
+static void *unmap_realloc(void *p, size_t size, size_t len);
 static unmap_storage_t *unmap_storage_init(unmap_t *list, size_t tsize, size_t asize, size_t hsize);
 static void *unmap_alloc(unmap_t *list, unmap_storage_t *st);
 static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box_t *box, size_t level);
@@ -30,28 +30,17 @@ unmap_t *unmap_init(size_t max_level, size_t tree_heap_size, size_t data_heap_si
 		data_heap_size = 512;
 	}
 	/* unmap_tオブジェクト確保 */
-	list = malloc(sizeof(unmap_t));
-	if(list == NULL){
-		perror("unmap_init");
-		return NULL;
-	}
-	/* ゼロクリアしておく */
-	memset(list, 0, sizeof(unmap_t));
-
-	if(setjmp(list->j_buf) == 0){
-		/* tree領域確保 */
-		list->tree_heap = unmap_storage_init(list, sizeof(unmap_tree_t),
-			UNMAP_HEAP_ARRAY_SIZE, tree_heap_size);
-		list->tree = (unmap_tree_t *)(list->tree_heap->heap[0]);
-		list->tree_heap->size_num = 1;
-		/* data領域確保 */
-		list->data_heap = unmap_storage_init(list, sizeof(unmap_data_t),
-			UNMAP_HEAP_ARRAY_SIZE, data_heap_size);
-		/* 最大深度セット */
-		list->max_level = max_level;
-	} else {
-		list = NULL;
-	}
+	list = unmap_malloc(sizeof(unmap_t));
+	/* tree領域確保 */
+	list->tree_heap = unmap_storage_init(list, sizeof(unmap_tree_t),
+		UNMAP_HEAP_ARRAY_SIZE, tree_heap_size);
+	list->tree = (unmap_tree_t *)(list->tree_heap->heap[0]);
+	list->tree_heap->size_num = 1;
+	/* data領域確保 */
+	list->data_heap = unmap_storage_init(list, sizeof(unmap_data_t),
+		UNMAP_HEAP_ARRAY_SIZE, data_heap_size);
+	/* 最大深度セット */
+	list->max_level = max_level;
 	return list;
 }
 
@@ -80,8 +69,8 @@ void unmap_free_func(unmap_t *list)
 			if((data->data != NULL) && (data->free_func != NULL)){
 				/* データが格納されている and 関数が登録されいる */
 				data->free_func(data->data);
-				data->data = NULL;
 			}
+			data->data = NULL;
 		}
 		free(st->heap[j]);
 		st->heap[j] = NULL;
@@ -103,14 +92,10 @@ int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, int f
 	}
 	/* hashを計算する */
 	unmap_hash_create(key, key_size, list->max_level, &box);
-	if(setjmp(list->j_buf) == 0){
-		tmp = unmap_area_get(list, list->tree, &box, list->max_level);
-		if(tmp->box.hash != box.hash){
-			/* 連結リストをたどる */
-			tmp = unmap_data_next(list, tmp, &box);
-		}
-	} else {
-		return -1;
+	tmp = unmap_area_get(list, list->tree, &box, list->max_level);
+	if(tmp->box.hash != box.hash){
+		/* 連結リストをたどる */
+		tmp = unmap_data_next(list, tmp, &box);
 	}
 	if((tmp->data != NULL) && (tmp->free_func != NULL)){
 		/* すでにデータが格納されている場合、開放する */
@@ -137,16 +122,12 @@ unmap_data_t *unmap_get(unmap_t *list, const char *key, size_t key_size)
 	data = unmap_cache_get(list, &box);
 	if(data == NULL){
 		/* unmap_tツリーから探索 */
-		if(setjmp(list->j_buf) == 0){
-			data = unmap_area_get(list, list->tree, &box, list->max_level);
-			if(data->box.hash != box.hash){
-				/* 連結リスト上を探索 */
-				data = unmap_data_next(list, data, &box);
-			}
-			unmap_cache_set(list, data);	/* キャッシュする */
-		} else {
-			return NULL;
+		data = unmap_area_get(list, list->tree, &box, list->max_level);
+		if(data->box.hash != box.hash){
+			/* 連結リスト上を探索 */
+			data = unmap_data_next(list, data, &box);
 		}
+		unmap_cache_set(list, data);	/* キャッシュする */
 	}
 	return data;
 }
@@ -188,25 +169,28 @@ unmap_data_t *unmap_at(unmap_t *list, size_t at)
 }
 
 /* エラー処理付きmalloc */
-static void *unmap_malloc(unmap_t *list, size_t size)
+static void *unmap_malloc(size_t size)
 {
 	void *p = malloc(size);
 	if(p == NULL){
 		perror("unmap_malloc");
-		longjmp(list->j_buf, 1);
-		/* NOTREACHED */
+	} else {
+		memset(p, 0, size);
 	}
 	return p;
 }
 
 /* エラー処理付きrealloc */
-static void *unmap_realloc(unmap_t *list, void *p, size_t size)
+static void *unmap_realloc(void *p, size_t size, size_t len)
 {
 	p = realloc(p, size);
 	if(p == NULL){
 		perror("unmap_realloc");
-		longjmp(list->j_buf, 1);
-		/* NOTREACHED */
+	} else {
+		len++;
+		if(size > len){
+			memset(((char *)p) + len, 0, size - len);
+		}
 	}
 	return p;
 }
@@ -214,14 +198,12 @@ static void *unmap_realloc(unmap_t *list, void *p, size_t size)
 /* ストレージ初期化 */
 static unmap_storage_t *unmap_storage_init(unmap_t *list, size_t tsize, size_t asize, size_t hsize)
 {
-	unmap_storage_t *st = unmap_malloc(list, sizeof(unmap_storage_t));
-	memset(st, 0, sizeof(unmap_storage_t));
+	unmap_storage_t *st = unmap_malloc(sizeof(unmap_storage_t));
 	st->array_size = asize;	/* 一列の長さ */
 	st->heap_size = hsize;	/* 一行の長さ(不変) */
 	st->type_size = tsize;	/* 型の大きさ */
-	st->heap = unmap_malloc(list, sizeof(void *) * st->array_size);
-	st->heap[0] = unmap_malloc(list, st->type_size * st->heap_size);
-	memset(st->heap[0], 0, st->type_size * st->heap_size);
+	st->heap = unmap_malloc(sizeof(void *) * st->array_size);
+	st->heap[0] = unmap_malloc(st->type_size * st->heap_size);
 	return st;
 }
 
@@ -231,18 +213,15 @@ static void *unmap_alloc(unmap_t *list, unmap_storage_t *st)
 	char *p = 0;
 	if(st->size_num >= st->heap_size){
 		/* 用意した領域を使い切った */
-		void *heap = 0;
 		st->size_num = 0;	/* 先頭を指し直す */
 		st->length++;		/* 次の領域へ */
 		if(st->length >= st->array_size){
 			/* 領域管理配列を拡張する */
 			st->array_size *= 2;
-			st->heap = unmap_realloc(list, st->heap, sizeof(void *) * st->array_size);
+			st->heap = unmap_realloc(st->heap, sizeof(void *) * st->array_size, sizeof(void *) * st->length);
 		}
 		/* 新しい領域を確保する */
-		heap = unmap_malloc(list, st->type_size * st->heap_size);
-		memset(heap, 0, st->type_size * st->heap_size);
-		st->heap[st->length] = heap;
+		st->heap[st->length] = unmap_malloc(st->type_size * st->heap_size);
 	}
 	p = st->heap[st->length];
 	/* 使用していない領域を返す */

@@ -283,12 +283,12 @@ static void *mainThread(void *data)
 		/* スレッド取得 */
 		nich = unarray_at(bl, i);
 		tl = get_board(get, nich);
+		sleep(4);
 		if(tl != NULL){
 			get_thread(get, tl);
 			/* unarrayの開放 */
 			unarray_free(tl, nich_free);
 		}
-		sleep(4);
 	}
 	un2ch_free(get);
 	/* 10分止める */

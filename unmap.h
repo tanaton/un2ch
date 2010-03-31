@@ -2,7 +2,6 @@
 #define INCLUDE_UNMAP_H
 
 #include <stdlib.h>
-#include <setjmp.h>
 
 #define UNMAP_PRIMES_TABLE			(257)
 #define UNMAP_HEAP_ARRAY_SIZE		(16)
@@ -51,7 +50,6 @@ typedef struct unmap_st {
 	unmap_tree_t *tree;			/* 最初の枝 */
 	unmap_data_t *cache[UNMAP_CACHE_SIZE + 1];	/* キャッシュ */
 	size_t max_level;			/* 最大階層 */
-	jmp_buf j_buf;				/* ジャンプバッファ */
 } unmap_t;
 
 /* プロトタイプ宣言 */
