@@ -24,7 +24,6 @@ static unstr_t* unstr_get_http_file(unstr_t *url, time_t *mod);
 static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag);
 static bool file_exists(unstr_t *filename, struct stat *data);
 static void touch(unstr_t *filename, time_t atime, time_t mtime);
-static void make_dir(un2ch_t *init);
 static bool make_dir_all(unstr_t *path);
 
 #define UN2CH_G_SABAKILL_SIZE		(11)
@@ -54,7 +53,7 @@ static char g_sabafilter[UN2CH_G_SABAFILTER_SIZE][25] = {
 	{ 0x83, 0x60, 0x83, 0x83, 0x83, 0x62, 0x83, 0x67, 0x82, 0x51, 0x82, 0x83, 0x82, 0x88, 0x81, 0x97, 0x82, 0x68, 0x82, 0x71, 0x82, 0x62, 0x00}
 };
 
-#define UN2CH_G_BOURBON_URL_SIZE		(5)
+#define UN2CH_G_BOURBON_URL_SIZE	(5)
 static const char *g_bourbon_url[UN2CH_G_BOURBON_URL_SIZE] = {
 	"bg20.2ch.net",
 	"bg21.2ch.net",
@@ -540,7 +539,7 @@ unstr_t* un2ch_get_board_name(un2ch_t *init)
 		return NULL;
 	}
 
-	make_dir(init);
+	make_dir_all(set);
 	unstr_file_put_contents(set, data, "w");
 	title = slice_board_name(data);
 	if(!unstr_empty(title)){
@@ -850,7 +849,7 @@ static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag)
 
 	switch(flag){
 	case UN2CH_CACHE_FOLDER:
-		make_dir(init);
+		make_dir_all(init->logfile);
 		break;
 	case UN2CH_CACHE_EDIT:
 		if(data->data[0] == '\n'){
@@ -859,7 +858,7 @@ static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag)
 		break;
 	case UN2CH_CACHE_OVERWRITE:
 		if(!file_exists(init->logfile, NULL)){
-			make_dir(init);
+			make_dir_all(init->logfile);
 		}
 		break;
 	default:
@@ -881,23 +880,6 @@ static bool create_cache(un2ch_t *init, unstr_t *data, un2ch_cache_t flag)
 	return true;
 }
 
-static void make_dir(un2ch_t *init)
-{
-	/* フォルダの確認＆作成 */
-	unstr_t *path = 0;
-	if(init->mode == UN2CH_MODE_THREAD){
-		path = unstr_sprintf(NULL, "%$/%$/%$/%$",
-			init->folder, init->server, init->board, init->thread_index);
-	} else if(init->mode == UN2CH_MODE_BOARD){
-		path = unstr_sprintf(NULL, "%$/%$/%$",
-			init->folder, init->server, init->board);
-	} else {
-		return;
-	}
-	make_dir_all(path);
-	unstr_free(path);
-}
-
 static bool make_dir_all(unstr_t *path)
 {
 	int mode = 0755;
@@ -914,7 +896,7 @@ static bool make_dir_all(unstr_t *path)
 	create = unstr_init_memory(32);
 	tmp = unstr_copy(path);
 	/* 下から順番に確認 */
-	while((count = unstr_sscanf(tmp, "/$/$", p1, p2)) > 0){
+	while((count = unstr_sscanf(tmp, "/$/$", p1, p2)) == 2){
 		unstr_strcat_char(create, "/");
 		unstr_strcat(create, p1);
 		if(!file_exists(create, NULL)){
@@ -923,11 +905,7 @@ static bool make_dir_all(unstr_t *path)
 				return false;
 			}
 		}
-		if(count == 2){
-			unstr_sprintf(tmp, "/%$", p2);
-		} else {
-			break;
-		}
+		unstr_sprintf(tmp, "/%$", p2);
 	}
 	unstr_delete(4, p1, p2, tmp, create);
 	return true;

@@ -22,6 +22,7 @@ static bool g_stop_flag = false;
 
 int main(void)
 {
+	pthread_t tid;
 	unmap_t *sl = get_server(false);
 	databox_t *databox = 0;
 	unmap_data_t *box = 0;
@@ -35,7 +36,6 @@ int main(void)
 		if(ar != NULL){
 			nich = unarray_at(ar, 0);
 			if(nich != NULL){
-				pthread_t tid;
 				/* スレッド作成 */
 				databox = unmalloc(sizeof(databox_t));
 				databox->bl = ar;
@@ -300,12 +300,12 @@ static void *mainThread(void *data)
 
 static void retryThread(databox_t *databox)
 {
+	pthread_t tid;
 	unmap_t *nsl = 0;
 	/* ロック */
 	pthread_mutex_lock(&g_mutex);
 	nsl = get_server(true);
 	if((nsl == NULL) && (g_stop_flag == false)){
-		pthread_t tid;
 		/* スレッド作成 */
 		if(pthread_create(&tid, NULL, mainThread, databox)){
 			printf("%s スレッド生成エラー\n", databox->key->data);
