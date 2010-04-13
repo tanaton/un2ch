@@ -565,6 +565,7 @@ static unstr_t* unstr_get_http_file(unstr_t *url, time_t *mod)
 	curl_easy_setopt(curl, CURLOPT_URL, url->data);
 	curl_easy_setopt(curl, CURLOPT_ENCODING, "gzip");
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
+	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	curl_easy_setopt(curl, CURLOPT_FILETIME, 1);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, returned_data);
@@ -694,6 +695,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 	curl_easy_setopt(curl, CURLOPT_HEADER, 1);
 	/* タイムアウトを指定 */
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
+	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10);
 	/* スレッドセーフに */
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	/* 400以上のステータスが帰ってきたら本文は取得しない */
@@ -817,6 +819,7 @@ static unstr_t* bourbon_request(un2ch_t *init)
 	unstr_delete(2, host, tmp);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
+	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10);
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	/* 400以上のステータスが帰ってきたら本文は取得しない */
 	curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1);

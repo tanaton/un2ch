@@ -232,8 +232,10 @@ static unmap_t *get_board_res(unstr_t *filename)
 	while(line != NULL){
 		if(unstr_sscanf(line, "$.dat<>$", p1, p2) == 2){
 			p = strrchr(p2->data, ' ');
-			nres = (int)strtol(p + 2, NULL, 10); /* +2は、空白と開きカッコをスキップ */
-			unmap_set(resmap, p1->data, p1->length, NULL, nres, NULL);
+			if(p != NULL){
+				nres = (int)strtol(p + 2, NULL, 10); /* +2は、空白と開きカッコをスキップ */
+				unmap_set(resmap, p1->data, p1->length, NULL, nres, NULL);
+			}
 		}
 		unstr_free(line);
 		line = unstr_strtok(data, "\n", &index);
