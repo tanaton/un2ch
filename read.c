@@ -182,8 +182,8 @@ static unarray_t *get_board(un2ch_t *get, nich_t *nich)
 			n->server = unstr_copy(nich->server);
 			n->board = unstr_copy(nich->board);
 			n->thread = unstr_copy(p1);
-			if(resmap != NULL){
-				p = strrchr(p2->data, ' ');
+			p = strrchr(p2->data, ' ');
+			if((resmap != NULL) && (p != NULL)){
 				/* +2は、空白と開きカッコをスキップ */
 				nres = (int)strtol(p + 2, NULL, 10);
 				box = unmap_get(resmap, p1->data, p1->length);
@@ -293,8 +293,8 @@ static void *mainThread(void *data)
 		}
 	}
 	un2ch_free(get);
-	/* 10分止める */
-	sleep(600);
+	/* 1分止める */
+	sleep(60);
 	retryThread(databox);
 	/* スレッドを終了する */
 	return NULL;
