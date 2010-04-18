@@ -27,6 +27,9 @@ static void touch(unstr_t *filename, time_t atime, time_t mtime);
 static bool make_dir_all(unstr_t *path);
 
 #define UN2CH_G_SABAKILL_SIZE		(11)
+#define UN2CH_G_SABAFILTER_SIZE		(4)
+#define UN2CH_G_BOURBON_URL_SIZE	(5)
+
 static const char *g_sabakill[UN2CH_G_SABAKILL_SIZE] = {
 	"www.2ch.net",
 	"info.2ch.net",
@@ -41,7 +44,6 @@ static const char *g_sabakill[UN2CH_G_SABAKILL_SIZE] = {
 	"dubai.2ch.net"
 };
 
-#define UN2CH_G_SABAFILTER_SIZE		(4)
 static char g_sabafilter[UN2CH_G_SABAFILTER_SIZE][25] = {
 	/* 他のサイト */
 	{ 0x91, 0xbc, 0x82, 0xcc, 0x83, 0x54, 0x83, 0x43, 0x83, 0x67, 0x00},
@@ -53,7 +55,6 @@ static char g_sabafilter[UN2CH_G_SABAFILTER_SIZE][25] = {
 	{ 0x83, 0x60, 0x83, 0x83, 0x83, 0x62, 0x83, 0x67, 0x82, 0x51, 0x82, 0x83, 0x82, 0x88, 0x81, 0x97, 0x82, 0x68, 0x82, 0x71, 0x82, 0x62, 0x00}
 };
 
-#define UN2CH_G_BOURBON_URL_SIZE	(5)
 static const char *g_bourbon_url[UN2CH_G_BOURBON_URL_SIZE] = {
 	"bg20.2ch.net",
 	"bg21.2ch.net",
@@ -411,6 +412,7 @@ static unstr_t* bourbon_data(un2ch_t *init)
 /* 板一覧取得 */
 bool un2ch_get_server(un2ch_t *init)
 {
+	size_t i = 0;
 	size_t index = 0;
 	unstr_t *p1 = 0;
 	unstr_t *p2 = 0;
@@ -436,10 +438,9 @@ bool un2ch_get_server(un2ch_t *init)
 		}
 	}
 	
-	filter[0] = g_sabafilter[0];
-	filter[1] = g_sabafilter[1];
-	filter[2] = g_sabafilter[2];
-	filter[3] = g_sabafilter[3];
+	for(i = 0; i < UN2CH_G_SABAFILTER_SIZE; i++){
+		filter[i] = g_sabafilter[i];
+	}
 	writedata = unstr_init_memory(UN2CH_CHAR_LENGTH);
 	p1 = unstr_init_memory(UN2CH_CHAR_LENGTH);
 	p2 = unstr_init_memory(UN2CH_CHAR_LENGTH);
@@ -638,8 +639,6 @@ static unstr_t* request(un2ch_t *init, bool flag)
 		header = curl_slist_append(header, tmp->data);
 		unstr_sprintf(tmp, "Host: %$", init->server);
 		header = curl_slist_append(header, tmp->data);
-		unstr_sprintf(tmp, "User-Agent: %s", UN2CH_VERSION);
-		header = curl_slist_append(header, tmp->data);
 		
 		if(file_exists(init->logfile, &st) && flag){
 			times = time(NULL);
@@ -664,7 +663,6 @@ static unstr_t* request(un2ch_t *init, bool flag)
 			/* 差分取得には使えないためここで設定 */
 			curl_easy_setopt(curl, CURLOPT_ENCODING, "gzip");
 		}
-		header = curl_slist_append(header, "Connection: close");
 		unstr_sprintf(tmp, "http://%$/%$/dat/%$", init->server, init->board, init->thread);
 		curl_easy_setopt(curl, CURLOPT_URL, tmp->data);
 	} else if(init->mode == UN2CH_MODE_BOARD){
@@ -673,9 +671,6 @@ static unstr_t* request(un2ch_t *init, bool flag)
 		header = curl_slist_append(header, tmp->data);
 		unstr_sprintf(tmp, "Host: %$", init->server);
 		header = curl_slist_append(header, tmp->data);
-		unstr_sprintf(tmp, "User-Agent: %s", UN2CH_VERSION);
-		header = curl_slist_append(header, tmp->data);
-		header = curl_slist_append(header, "Connection: close");
 		curl_easy_setopt(curl, CURLOPT_ENCODING, "gzip");
 		unstr_sprintf(tmp, "http://%$/%$/%s", init->server, init->board, UN2CH_BOARD_SUBJECT_FILENAME);
 		curl_easy_setopt(curl, CURLOPT_URL, tmp->data);
@@ -686,6 +681,9 @@ static unstr_t* request(un2ch_t *init, bool flag)
 		curl_easy_cleanup(curl);
 		return NULL;
 	}
+	unstr_sprintf(tmp, "User-Agent: %s", UN2CH_VERSION);
+	header = curl_slist_append(header, tmp->data);
+	header = curl_slist_append(header, "Connection: close");
 	/* 領域解放 */
 	unstr_free(tmp);
 
@@ -780,32 +778,21 @@ static unstr_t* bourbon_request(un2ch_t *init)
 
 	/* TODO:スレッドセーフな乱数にしたい */
 	host = unstr_init(g_bourbon_url[clock() % UN2CH_G_BOURBON_URL_SIZE]);
-
 	tmp = unstr_init_memory(UN2CH_CHAR_LENGTH);
 
 	if(init->mode == UN2CH_MODE_THREAD){
 		/* dat取得用header生成 */
 		unstr_sprintf(tmp, "GET /test/r.so/%$/%$/%$/ HTTP/1.1", init->server, init->board, init->thread_number);
 		header = curl_slist_append(header, tmp->data);
-		unstr_sprintf(tmp, "Host: %$", host);
-		header = curl_slist_append(header, tmp->data);
-		unstr_sprintf(tmp, "User-Agent: %s", UN2CH_VERSION);
-		header = curl_slist_append(header, tmp->data);
 		/* 差分取得には使えないためここで設定 */
 		curl_easy_setopt(curl, CURLOPT_ENCODING, "gzip");
-		header = curl_slist_append(header, "Connection: close");
 		unstr_sprintf(tmp, "http://%$/test/r.so/%$/%$/%$/", host, init->server, init->board, init->thread_number);
 		curl_easy_setopt(curl, CURLOPT_URL, tmp->data);
 	} else if(init->mode == UN2CH_MODE_BOARD){
 		/* スレッド一覧取得用header生成 */
 		unstr_sprintf(tmp, "GET /test/p.so/%$/%$/ HTTP/1.1", init->server, init->board);
 		header = curl_slist_append(header, tmp->data);
-		unstr_sprintf(tmp, "Host: %$", host);
-		header = curl_slist_append(header, tmp->data);
-		unstr_sprintf(tmp, "User-Agent: %s", UN2CH_VERSION);
-		header = curl_slist_append(header, tmp->data);
 		curl_easy_setopt(curl, CURLOPT_ENCODING, "gzip");
-		header = curl_slist_append(header, "Connection: close");
 		unstr_sprintf(tmp, "http://%$/test/p.so/%$/%$/", host, init->server, init->board);
 		curl_easy_setopt(curl, CURLOPT_URL, tmp->data);
 	} else {
@@ -815,6 +802,11 @@ static unstr_t* bourbon_request(un2ch_t *init)
 		curl_easy_cleanup(curl);
 		return NULL;
 	}
+	unstr_sprintf(tmp, "Host: %$", host);
+	header = curl_slist_append(header, tmp->data);
+	unstr_sprintf(tmp, "User-Agent: %s", UN2CH_VERSION);
+	header = curl_slist_append(header, tmp->data);
+	header = curl_slist_append(header, "Connection: close");
 	/* 領域解放 */
 	unstr_delete(2, host, tmp);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header);
