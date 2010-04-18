@@ -46,6 +46,8 @@ int main(void)
 					printf("%s スレッド生成エラー\n", nich->server->data);
 				}
 				databox = NULL;
+				/* 1秒止める */
+				sleep(1);
 			}
 		}
 	}

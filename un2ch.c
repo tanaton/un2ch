@@ -76,7 +76,6 @@ un2ch_t* un2ch_init(void)
 		return NULL;
 	}
 	memset(init, 0, sizeof(un2ch_t));
-	init->byte = 0;						/* datのデータサイズ */
 	init->mod = 0;						/* datの最終更新時間 */
 	init->code = 0;						/* HTTPステータスコード */
 	init->mode = UN2CH_MODE_NOTING;
@@ -282,17 +281,13 @@ static unstr_t* normal_data(un2ch_t *init)
 		case 206:
 			create_cache(init, data, UN2CH_CACHE_EDIT);
 			unstr_free(data);
-			if((data = unstr_file_get_contents(logfile)) != NULL){
-				init->byte = data->length;
-			} else {
+			if((data = unstr_file_get_contents(logfile)) == NULL){
 				fprintf(stderr, "206 error\n");
 			}
 			break;
 		case 304:
 			unstr_free(data);
-			if((data = unstr_file_get_contents(logfile)) != NULL){
-				init->byte = data->length;
-			} else {
+			if((data = unstr_file_get_contents(logfile)) == NULL){
 				fprintf(stderr, "304 error\n");
 				/* 鯖情報取得 */
 				un2ch_get_server(init);
@@ -311,7 +306,6 @@ static unstr_t* normal_data(un2ch_t *init)
 		case 404:
 			unstr_free(data);
 			if((data = unstr_file_get_contents(logfile)) != NULL){
-				init->byte = data->length;
 				if(init->bourbon == false){
 					mod = timestp + (60 * 60 * 24 * 365 * 5);
 					touch(logfile, mod, mod); /* 未来の時間をセットしておく */
@@ -320,15 +314,11 @@ static unstr_t* normal_data(un2ch_t *init)
 			break;
 		case 0:
 			unstr_free(data);
-			if((data = unstr_file_get_contents(logfile)) != NULL){
-				init->byte = data->length;
-			}
+			data = unstr_file_get_contents(logfile);
 			break;
 		default:
 			unstr_free(data);
-			if((data = unstr_file_get_contents(logfile)) != NULL){
-				init->byte = data->length;
-			} else {
+			if((data = unstr_file_get_contents(logfile)) == NULL){
 				/* 鯖情報取得 */
 				un2ch_get_server(init);
 			}
@@ -342,9 +332,7 @@ static unstr_t* normal_data(un2ch_t *init)
 			break;
 		case 304:
 			unstr_free(data);
-			if((data = unstr_file_get_contents(logfile)) != NULL){
-				init->byte = data->length;
-			}
+			data = unstr_file_get_contents(logfile);
 			break;
 		case 301:
 		case 302:
@@ -354,9 +342,7 @@ static unstr_t* normal_data(un2ch_t *init)
 			break;
 		case 0:
 			unstr_free(data);
-			if((data = unstr_file_get_contents(logfile)) != NULL){
-				init->byte = data->length;
-			}
+			data = unstr_file_get_contents(logfile);
 			break;
 		default:
 			unstr_free(data);
@@ -611,6 +597,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 	unstr_t *tmp = 0;
 	/* スレッドデータサイズ */
 	size_t data_size = 0;
+	size_t byte = 0;
 	/* レスポンスヘッダー格納用 */
 	char *header_data = 0;
 	/* レスポンスヘッダーサイズ */
@@ -631,7 +618,6 @@ static unstr_t* request(un2ch_t *init, bool flag)
 	init->bourbon = false;
 	init->code = 0;
 	init->mod = 0;
-	init->byte = 0;
 
 	if(init->mode == UN2CH_MODE_THREAD){
 		/* dat取得用header生成 */
@@ -729,9 +715,9 @@ static unstr_t* request(un2ch_t *init, bool flag)
 	/* Locationを監視、バーボン検知 */
 	if(header_size > 0){
 		/* ダウンロードしたサイズ */
-		init->byte = getdata->length - header_size;
+		byte = getdata->length - header_size;
 		/* あぼーん検知 */
-		if(flag && (init->code == 206) && (init->byte > 1)){
+		if(flag && (init->code == 206) && (byte > 1)){
 			if(getdata->data[header_size] == '\n'){
 				header_size++;
 			} else {
@@ -774,7 +760,6 @@ static unstr_t* bourbon_request(un2ch_t *init)
 
 	init->code = 0;
 	init->mod = time(NULL);
-	init->byte = 0;
 
 	/* TODO:スレッドセーフな乱数にしたい */
 	host = unstr_init(g_bourbon_url[clock() % UN2CH_G_BOURBON_URL_SIZE]);

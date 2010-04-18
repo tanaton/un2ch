@@ -70,7 +70,6 @@ typedef enum {
 } un2chinfo_t;
 
 typedef struct un2ch_st {
-	size_t byte;						/* datのデータサイズ */
 	time_t mod;							/* datの最終更新時間 */
 	long code;							/* HTTPステータスコード */
 	unstr_t *folder;
