@@ -460,7 +460,7 @@ bool un2ch_get_server(un2ch_t *init)
 
 static bool in_array(const char *str, const char **array, size_t size)
 {
-	int i = 0;
+	size_t i = 0;
 	bool ret = false;
 	for(i = 0; i < size; i++){
 		if(strcmp(str, array[i]) == 0){
