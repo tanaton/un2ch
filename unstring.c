@@ -175,7 +175,7 @@ void unstr_zero(unstr_t *str)
  * @return		UNSTRING_FALSE	確保なし
  * @public
  */
-unstr_bool_t unstr_isset(unstr_t *str)
+unstr_bool_t unstr_isset(const unstr_t *str)
 {
 	unstr_bool_t ret = UNSTRING_FALSE;
 	if((str != NULL) && (str->data != NULL)){
@@ -194,7 +194,7 @@ unstr_bool_t unstr_isset(unstr_t *str)
  * @return		UNSTRING_FALSE	空ではない
  * @public
  */
-unstr_bool_t unstr_empty(unstr_t *str)
+unstr_bool_t unstr_empty(const unstr_t *str)
 {
 	unstr_bool_t ret = UNSTRING_FALSE;
 	if((str == NULL) || (str->data == NULL) || (str->length <= 0)){
@@ -211,7 +211,7 @@ unstr_bool_t unstr_empty(unstr_t *str)
  * @return		文字列の長さ
  * @public
  */
-size_t unstr_strlen(unstr_t *str)
+size_t unstr_strlen(const unstr_t *str)
 {
 	if(unstr_isset(str)){
 		return str->length;
@@ -225,7 +225,7 @@ size_t unstr_strlen(unstr_t *str)
  * @return		コピーした文字列
  * @public
  */
-unstr_t *unstr_copy(unstr_t *str)
+unstr_t *unstr_copy(const unstr_t *str)
 {
 	unstr_t *data = 0;
 	if(unstr_isset(str)){
@@ -244,7 +244,7 @@ unstr_t *unstr_copy(unstr_t *str)
  * @return			UNSTRING_FALSE	失敗
  * @public
  */
-unstr_bool_t unstr_strcpy(unstr_t *s1, unstr_t *s2)
+unstr_bool_t unstr_strcpy(unstr_t *s1, const unstr_t *s2)
 {
 	if(unstr_isset(s1)){
 		unstr_zero(s1);
@@ -284,7 +284,7 @@ unstr_bool_t unstr_strcpy_char(unstr_t *s1, const char *s2)
  * @return			UNSTRING_FALSE	失敗
  * @public
  */
-unstr_bool_t unstr_substr(unstr_t *s1, unstr_t *s2, size_t len)
+unstr_bool_t unstr_substr(unstr_t *s1, const unstr_t *s2, size_t len)
 {
 	if((!unstr_isset(s1)) || unstr_empty(s2)) return UNSTRING_FALSE;
 	if(s2->length < len){
@@ -330,7 +330,7 @@ unstr_t *unstr_substr_char(const char *str, size_t len)
  * @return			UNSTRING_FALSE	失敗
  * @public
  */
-unstr_bool_t unstr_strcat(unstr_t *s1, unstr_t *s2)
+unstr_bool_t unstr_strcat(unstr_t *s1, const unstr_t *s2)
 {
 	if((!unstr_isset(s1)) || unstr_empty(s2)) return UNSTRING_FALSE;
 	if(unstr_check_heap_size(s1, s2->length + 1)){
@@ -372,12 +372,64 @@ unstr_bool_t unstr_strcat_char(unstr_t *str, const char *c)
  * @return		上記以外	違う(文字コードの差分)
  * @public
  */
-int unstr_strcmp(unstr_t *s1, unstr_t *s2)
+int unstr_strcmp(const unstr_t *s1, const unstr_t *s2)
 {
 	if(unstr_isset(s1) && unstr_isset(s2)){
 		return strcmp(s1->data, s2->data);
 	}
 	return 0x100;
+}
+
+/**
+ * @brief		char文字列とunstr_t文字列を比較する
+ * @param[in]	s1		比較文字列1
+ * @param[in]	s2		比較文字列2
+ * @return		比較結果
+ * @return		0			同じ
+ * @return		0x100		エラー
+ * @return		上記以外	違う(文字コードの差分)
+ * @public
+ */
+int unstr_strcmp_char(const unstr_t *s1, const char *s2)
+{
+	if(unstr_isset(s1) && (s2 != NULL)){
+		return strcmp(s1->data, s2);
+	}
+	return 0x100;
+}
+
+/**
+ * @brief		文字列を検索する
+ * @param[in]	s1		比較文字列1
+ * @param[in]	s2		比較文字列2
+ * @return		比較結果
+ * @return		アドレス	発見
+ * @return		NULL		エラー
+ * @public
+ */
+char* unstr_strstr(const unstr_t *s1, const unstr_t *s2)
+{
+	if(unstr_isset(s1) && unstr_isset(s2)){
+		return strstr(s1->data, s2->data);
+	}
+	return NULL;
+}
+
+/**
+ * @brief		unstr_t文字列をchar文字列で検索する
+ * @param[in]	s1		比較文字列1
+ * @param[in]	s2		比較文字列2
+ * @return		比較結果
+ * @return		アドレス	発見
+ * @return		NULL		エラー
+ * @public
+ */
+char* unstr_strstr_char(const unstr_t *s1, const char *s2)
+{
+	if(unstr_isset(s1) && (s2 != NULL)){
+		return strstr(s1->data, s2);
+	}
+	return NULL;
 }
 
 /**
@@ -584,7 +636,7 @@ unstr_t *unstr_itoa(int num, size_t physics)
  * 「$$」と書けば「$」を区切り文字に出来る\n
  * 取得した文字列の数を返す。上記の場合は「2」を返す
  */
-size_t unstr_sscanf(unstr_t *data, const char *format, ...)
+size_t unstr_sscanf(const unstr_t *data, const char *format, ...)
 {
 	va_list list;
 	size_t count = 0;
@@ -667,7 +719,7 @@ size_t unstr_sscanf(unstr_t *data, const char *format, ...)
  * @return		読み込んだファイルの中身
  * @public
  */
-unstr_t *unstr_file_get_contents(unstr_t *filename)
+unstr_t *unstr_file_get_contents(const unstr_t *filename)
 {
 	FILE *fp = fopen(filename->data, "r");
 	unstr_t *str = 0;
@@ -705,7 +757,7 @@ unstr_t *unstr_file_get_contents(unstr_t *filename)
  * @return		UNSTRING_FALSE	失敗
  * @public
  */
-unstr_bool_t unstr_file_put_contents(unstr_t *filename, unstr_t *data, const char *mode)
+unstr_bool_t unstr_file_put_contents(const unstr_t *filename, const unstr_t *data, const char *mode)
 {
 	size_t size = 0;
 	FILE *fp = fopen(filename->data, mode);
@@ -732,7 +784,7 @@ unstr_bool_t unstr_file_put_contents(unstr_t *filename, unstr_t *data, const cha
  */
 unstr_t *unstr_replace(unstr_t *data, unstr_t *search, unstr_t *replace)
 {
-	unstr_t *string = 0;
+	unstr_t *str = 0;
 	size_t size = 0;
 	char *pt = data->data;
 	char *index = 0;
@@ -740,28 +792,28 @@ unstr_t *unstr_replace(unstr_t *data, unstr_t *search, unstr_t *replace)
 	if(unstr_empty(data) || unstr_empty(search) || unstr_empty(replace)){
 		return NULL;
 	}
-	string = unstr_init_memory(data->length);
+	str = unstr_init_memory(data->length);
 	while((index = strstr(pt, search->data)) != NULL){
 		size = (size_t)(index - pt);
-		if(unstr_check_heap_size(string, size + replace->length)){
-			unstr_alloc(string, size + replace->length);
+		if(unstr_check_heap_size(str, size + replace->length)){
+			unstr_alloc(str, size + replace->length);
 		}
-		memcpy(&(string->data[string->length]), pt, size);
-		string->length += size;
-		memcpy(&(string->data[string->length]), replace->data, replace->length);
-		string->length += replace->length;
+		memcpy(&(str->data[str->length]), pt, size);
+		str->length += size;
+		memcpy(&(str->data[str->length]), replace->data, replace->length);
+		str->length += replace->length;
 		pt = index + search->length;
 	}
 	if(*pt != '\0'){
 		size = strlen(pt);
-		if(unstr_check_heap_size(string, size)){
-			unstr_alloc(string, size);
+		if(unstr_check_heap_size(str, size)){
+			unstr_alloc(str, size);
 		}
-		memcpy(&(string->data[string->length]), pt, size);
-		string->length += size;
+		memcpy(&(str->data[str->length]), pt, size);
+		str->length += size;
 	}
-	string->data[string->length] = '\0';
-	return string;
+	str->data[str->length] = '\0';
+	return str;
 }
 
 /**

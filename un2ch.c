@@ -376,8 +376,8 @@ static unstr_t* bourbon_data(un2ch_t *init)
 	}
 
 	tmp = unstr_substr_char(data->data, 256);
-	if((strstr(tmp->data, g_tanpan) != NULL) ||
-	   (strstr(tmp->data, g_nagoya) != NULL))
+	if((unstr_strstr_char(tmp, g_tanpan) != NULL) ||
+	   (unstr_strstr_char(tmp, g_nagoya) != NULL))
 	{
 		unstr_free(data);
 		init->code = 302;
@@ -442,7 +442,8 @@ bool un2ch_get_server(un2ch_t *init)
 				unstr_strcat_char(line, "\n");
 			}
 		} else if(unstr_sscanf(list, "<A HREF=http://$/$/>$</A>", p1, p2, p3) == 3){
-			if((strstr(p1->data, ".2ch.net") != NULL) || (strstr(p1->data, ".bbspink.com") != NULL)){
+			if((unstr_strstr_char(p1, ".2ch.net") != NULL) ||
+			   (unstr_strstr_char(p1, ".bbspink.com") != NULL)){
 				if(!in_array(p1->data, g_sabakill, UN2CH_G_SABAKILL_SIZE)){
 					/* 書き込む */
 					unstr_sprintf(writedata, "%$/%$<>%$\n", p1, p2, p3);
@@ -727,7 +728,7 @@ static unstr_t* request(un2ch_t *init, bool flag)
 		data_size = getdata->length - header_size;
 		/* ヘッダーと本文との境目を\0に */
 		getdata->data[header_size - 1] = '\0';
-		if((header_data = strstr(getdata->data, "Location:")) != NULL){
+		if((header_data = unstr_strstr_char(getdata, "Location:")) != NULL){
 			if((header_data = strstr(header_data, "403")) != NULL){
 				init->bourbon = true;
 			}

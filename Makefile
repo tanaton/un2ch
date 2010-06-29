@@ -1,8 +1,8 @@
 PROGRAM = read2ch
 CC = gcc
 LINKER = gcc
-CFLAGS = -g -Wall
-X = -lcurl -lpthread
+CFLAGS = -O2 -Wall
+X = -lcurl -lpthread -ltcmalloc
 RM = rm -rf
 
 SRCS = read.c un2ch.c unstring.c unarray.c crc32.c unmap.c
