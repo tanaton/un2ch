@@ -79,7 +79,7 @@ unstr_t *unstr_alloc(unstr_t *str, size_t size)
 	/* 頻繁に確保すると良くないらしいので大まかに確保して
 	 * 確保する回数を減らす。
 	 */
-	str->heap += ((size / UNSTRING_HEAP_SIZE) + 1) * UNSTRING_HEAP_SIZE;
+	str->heap += size + (str->heap >> 1);
 	str->data = unstr_realloc(str->data, str->heap, str->length);
 	return str;
 }

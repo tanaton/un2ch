@@ -217,7 +217,7 @@ static void *unmap_alloc(unmap_t *list, unmap_storage_t *st)
 		st->length++;		/* 次の領域へ */
 		if(st->length >= st->array_size){
 			/* 領域管理配列を拡張する */
-			st->array_size *= 2;
+			st->array_size += st->length >> 1;
 			st->heap = unmap_realloc(st->heap, sizeof(void *) * st->array_size, sizeof(void *) * st->length);
 		}
 		/* 新しい領域を確保する */

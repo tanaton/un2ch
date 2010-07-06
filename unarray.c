@@ -66,7 +66,7 @@ void unarray_free_func(unarray_t *array, void (*free_func)(void *))
 static void unarray_alloc_memory(unarray_t *array, size_t size)
 {
 	if((array->length + size) >= array->heap){
-		array->heap = (((array->heap + size) / UNARRAY_MAIN_SIZE) + 1) * UNARRAY_MAIN_SIZE;
+		array->heap += size + (array->heap >> 1);
 		array->data = unarray_realloc(array->data, unsizeof(array->heap), unsizeof(array->length));
 	}
 }
