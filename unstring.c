@@ -489,6 +489,7 @@ unstr_t *unstr_sprintf(unstr_t *str, const char *format, ...)
 	if(unstr_isset(str)){
 		unstr_zero(str);
 	} else {
+		unstr_free(str);
 		str = unstr_init_memory(UNSTRING_HEAP_SIZE);
 	}
 	while(*format != '\0'){
