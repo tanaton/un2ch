@@ -229,8 +229,7 @@ unstr_t *unstr_copy(const unstr_t *str)
 {
 	unstr_t *data = 0;
 	if(unstr_isset(str)){
-		data = unstr_init_memory(str->heap);
-		unstr_strcpy(data, str);
+		data = unstr_init(str->data);
 	}
 	return data;
 }
@@ -312,12 +311,11 @@ unstr_bool_t unstr_substr(unstr_t *s1, const unstr_t *s2, size_t len)
 unstr_t *unstr_substr_char(const char *str, size_t len)
 {
 	unstr_t *data = 0;
-	unstr_t *copy = 0;
 	if(str == NULL) return NULL;
-	data = unstr_init_memory(len);
-	copy = unstr_init(str);
-	unstr_substr(data, copy, len);
-	unstr_free(copy);
+	data = unstr_init_memory(len + 1);
+	memcpy(data->data, str, len);
+	data->data[len] = '\0';
+	data->length = len;
 	return data;
 }
 
