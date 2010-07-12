@@ -20,11 +20,12 @@ typedef struct unarray_st {
 	size_t		heap;
 } unarray_t;
 
-unarray_t *unarray_init(void);
+unarray_t *unarray_init(size_t size);
 void unarray_free_func(unarray_t *array, void (*free_func)(void *));
 unarray_code_t unarray_push(unarray_t *array, void *data);
 void* unarray_pop(unarray_t *array);
 void* unarray_at(unarray_t *array, size_t at);
+size_t unarray_size(unarray_t *array);
 unarray_code_t unarray_insert(unarray_t *array, void *data, size_t at);
 unarray_code_t unarray_delete(unarray_t *array, size_t at, void (*free_func)(void *));
 

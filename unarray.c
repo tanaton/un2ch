@@ -36,13 +36,14 @@ static size_t unsizeof(size_t size)
 	return sizeof(void *) * size;
 }
 
-unarray_t *unarray_init(void)
+unarray_t *unarray_init(size_t size)
 {
 	unarray_t *array = unarray_malloc(sizeof(unarray_t));
+	size_t heap = ((size / UNARRAY_MAIN_SIZE) + 1) * UNARRAY_MAIN_SIZE;
 	memset(array, 0, sizeof(unarray_t));
-	array->data = unarray_malloc(unsizeof(UNARRAY_MAIN_SIZE));
-	memset(array->data, 0, unsizeof(UNARRAY_MAIN_SIZE));
-	array->heap = UNARRAY_MAIN_SIZE;
+	array->data = unarray_malloc(unsizeof(heap));
+	memset(array->data, 0, unsizeof(heap));
+	array->heap = heap;
 	return array;
 }
 
@@ -99,6 +100,14 @@ void* unarray_at(unarray_t *array, size_t at)
 	if(!array) return NULL;
 	if(at >= array->length) return NULL;
 	return array->data[at];
+}
+
+size_t unarray_size(unarray_t *array)
+{
+	if(array == NULL){
+		return 0;
+	}
+	return array->length;
 }
 
 unarray_code_t unarray_insert(unarray_t *array, void *data, size_t at)

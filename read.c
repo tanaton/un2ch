@@ -126,7 +126,7 @@ static unmap_t *get_server(bool flag)
 			nich->thread = NULL;
 			p = unmap_get(hash, nich->server->data, nich->server->length);
 			if(p->data == NULL){
-				list = unarray_init();
+				list = unarray_init(32);
 				unarray_push(list, nich);
 				p->data = list;
 				p->free_func = sl_free;
@@ -161,7 +161,7 @@ static unarray_t *get_board(un2ch_t *get, nich_t *nich)
 	if(get == NULL || nich == NULL){
 		return NULL;
 	}
-	tl = unarray_init();
+	tl = unarray_init(512);
 	p1 = unstr_init_memory(16);
 	p2 = unstr_init_memory(256);
 
