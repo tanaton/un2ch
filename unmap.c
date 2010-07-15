@@ -45,7 +45,7 @@ unmap_t *unmap_init(size_t max_level, size_t tree_heap_size, size_t data_heap_si
 }
 
 /* unmap_tオブジェクト開放 */
-void unmap_free_func(unmap_t *list)
+void unmap_free_func(unmap_t *list, void (*free_func)(void *))
 {
 	size_t i = 0;
 	size_t j = 0;
@@ -63,17 +63,25 @@ void unmap_free_func(unmap_t *list)
 	list->tree_heap = NULL;
 	/* data開放 */
 	st = list->data_heap;
-	for(j = 0; j <= st->length; j++){
-		for(i = 0; i < st->heap_size; i++){
-			data = (unmap_data_t *)((char *)st->heap[j] + (st->type_size * i));
-			if((data->data != NULL) && (data->free_func != NULL)){
-				/* データが格納されている and 関数が登録されいる */
-				data->free_func(data->data);
-			}
-			data->data = NULL;
+	if(free_func == NULL){
+		for(j = 0; j <= st->length; j++){
+			memset(st->heap[j], 0, st->heap_size * st->type_size);
+			free(st->heap[j]);
+			st->heap[j] = NULL;
 		}
-		free(st->heap[j]);
-		st->heap[j] = NULL;
+	} else {
+		for(j = 0; j <= st->length; j++){
+			for(i = 0; i < st->heap_size; i++){
+				data = (unmap_data_t *)((char *)st->heap[j] + (st->type_size * i));
+				if(data->data != NULL){
+					/* データが格納されている and 関数が登録されいる */
+					free_func(data->data);
+				}
+				data->data = NULL;
+			}
+			free(st->heap[j]);
+			st->heap[j] = NULL;
+		}
 	}
 	free(st->heap);
 	free(st);
@@ -83,7 +91,7 @@ void unmap_free_func(unmap_t *list)
 }
 
 /* unmap_tオブジェクトに値をセットする */
-int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, int flag, void (*free_func)(void *))
+int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, void (*free_func)(void *))
 {
 	unmap_data_t *tmp = 0;
 	unmap_box_t box = {0};
@@ -97,19 +105,17 @@ int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, int f
 		/* 連結リストをたどる */
 		tmp = unmap_data_next(list, tmp, &box);
 	}
-	if((tmp->data != NULL) && (tmp->free_func != NULL)){
+	if((tmp->data != NULL) && (free_func != NULL)){
 		/* すでにデータが格納されている場合、開放する */
-		tmp->free_func(tmp->data);
+		free_func(tmp->data);
 	}
 	tmp->data = data;
-	tmp->flag = flag;
-	tmp->free_func = free_func;
 	unmap_cache_set(list, tmp);	/* キャッシュする */
 	return 0;
 }
 
 /* unmap_tオブジェクトから値を取得 */
-unmap_data_t *unmap_get(unmap_t *list, const char *key, size_t key_size)
+void *unmap_get(unmap_t *list, const char *key, size_t key_size)
 {
 	unmap_data_t *data = 0;
 	unmap_box_t box = {0};
@@ -129,7 +135,7 @@ unmap_data_t *unmap_get(unmap_t *list, const char *key, size_t key_size)
 		}
 		unmap_cache_set(list, data);	/* キャッシュする */
 	}
-	return data;
+	return data->data;
 }
 
 /* 格納しているデータ数を返す */
@@ -146,26 +152,22 @@ size_t unmap_size(unmap_t *list)
 }
 
 /* 要素数指定取得 */
-unmap_data_t *unmap_at(unmap_t *list, size_t at)
+void *unmap_at(unmap_t *list, size_t at)
 {
 	unmap_storage_t *st = 0;
 	unmap_data_t *data = 0;
 	size_t size = unmap_size(list);
-	size_t i = 0;
-	size_t j = 0;
 	char *p = 0;
+	void *ret = 0;
 
 	if(at < size){
 		/* 格納数よりも少ない場合 */
 		st = list->data_heap;
-		i = at / st->heap_size;
-		j = at % st->heap_size;
-		p = st->heap[i];
-		data = (unmap_data_t *)(p + (st->type_size * j));
-	} else {
-		data = NULL;
+		p = st->heap[at / st->heap_size];
+		data = (unmap_data_t *)(p + (st->type_size * (at % st->heap_size)));
+		ret = data->data;
 	}
-	return data;
+	return ret;
 }
 
 /* エラー処理付きmalloc */
