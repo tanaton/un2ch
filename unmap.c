@@ -7,8 +7,8 @@
 /* プロトタイプ宣言 */
 static void *unmap_malloc(size_t size);
 static void *unmap_realloc(void *p, size_t size, size_t len);
-static unmap_storage_t *unmap_storage_init(unmap_t *list, size_t tsize, size_t asize, size_t hsize);
-static void *unmap_alloc(unmap_t *list, unmap_storage_t *st);
+static unmap_storage_t *unmap_storage_init(unmap_t *list, size_t tsize, size_t hsize);
+static void *unmap_storage_alloc(unmap_storage_t *st);
 static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box_t *box, size_t level);
 static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_box_t *box);
 static void unmap_cache_set(unmap_t *list, unmap_data_t *data);
@@ -32,13 +32,11 @@ unmap_t *unmap_init(size_t max_level, size_t tree_heap_size, size_t data_heap_si
 	/* unmap_tオブジェクト確保 */
 	list = unmap_malloc(sizeof(unmap_t));
 	/* tree領域確保 */
-	list->tree_heap = unmap_storage_init(list, sizeof(unmap_tree_t),
-		UNMAP_HEAP_ARRAY_SIZE, tree_heap_size);
+	list->tree_heap = unmap_storage_init(list, sizeof(unmap_tree_t), tree_heap_size);
 	list->tree = (unmap_tree_t *)(list->tree_heap->heap[0]);
-	list->tree_heap->size_num = 1;
+	list->tree_heap->data_index = 1;
 	/* data領域確保 */
-	list->data_heap = unmap_storage_init(list, sizeof(unmap_data_t),
-		UNMAP_HEAP_ARRAY_SIZE, data_heap_size);
+	list->data_heap = unmap_storage_init(list, sizeof(unmap_data_t), data_heap_size);
 	/* 最大深度セット */
 	list->max_level = max_level;
 	return list;
@@ -54,9 +52,9 @@ void unmap_free_func(unmap_t *list, void (*free_func)(void *))
 	if((list == NULL) || (list->tree == NULL)) return;
 	/* tree開放 */
 	st = list->tree_heap;
-	for(i = 0; i <= st->length; i++){
+	free(st->heap[0]);
+	for(i = UNMAP_HEAP_ARRAY_SIZE; i < st->list_size; i *= 2){
 		free(st->heap[i]);
-		st->heap[i] = NULL;
 	}
 	free(st->heap);
 	free(st);
@@ -64,13 +62,12 @@ void unmap_free_func(unmap_t *list, void (*free_func)(void *))
 	/* data開放 */
 	st = list->data_heap;
 	if(free_func == NULL){
-		for(j = 0; j <= st->length; j++){
-			memset(st->heap[j], 0, st->heap_size * st->type_size);
-			free(st->heap[j]);
-			st->heap[j] = NULL;
+		free(st->heap[0]);
+		for(i = UNMAP_HEAP_ARRAY_SIZE; i < st->list_size; i *= 2){
+			free(st->heap[i]);
 		}
 	} else {
-		for(j = 0; j <= st->length; j++){
+		for(j = 0; j < st->list_size; j++){
 			for(i = 0; i < st->heap_size; i++){
 				data = (unmap_data_t *)((char *)st->heap[j] + (st->type_size * i));
 				if(data->data != NULL){
@@ -79,8 +76,10 @@ void unmap_free_func(unmap_t *list, void (*free_func)(void *))
 				}
 				data->data = NULL;
 			}
-			free(st->heap[j]);
-			st->heap[j] = NULL;
+		}
+		free(st->heap[0]);
+		for(i = UNMAP_HEAP_ARRAY_SIZE; i < st->list_size; i *= 2){
+			free(st->heap[i]);
 		}
 	}
 	free(st->heap);
@@ -147,7 +146,7 @@ size_t unmap_size(unmap_t *list)
 		return 0;
 	}
 	st = list->data_heap;
-	size = (st->heap_size * st->length) + st->size_num;
+	size = (st->heap_size * st->list_index) + st->data_index;
 	return size;
 }
 
@@ -198,36 +197,52 @@ static void *unmap_realloc(void *p, size_t size, size_t len)
 }
 
 /* ストレージ初期化 */
-static unmap_storage_t *unmap_storage_init(unmap_t *list, size_t tsize, size_t asize, size_t hsize)
+static unmap_storage_t *unmap_storage_init(unmap_t *list, size_t tsize, size_t hsize)
 {
 	unmap_storage_t *st = unmap_malloc(sizeof(unmap_storage_t));
-	st->array_size = asize;	/* 一列の長さ */
+	char *p = 0;
+	size_t i = 0;
+	size_t block = 0;
+	st->list_size = UNMAP_HEAP_ARRAY_SIZE;	/* 一列の長さ */
 	st->heap_size = hsize;	/* 一行の長さ(不変) */
 	st->type_size = tsize;	/* 型の大きさ */
-	st->heap = unmap_malloc(sizeof(void *) * st->array_size);
-	st->heap[0] = unmap_malloc(st->type_size * st->heap_size);
+	block = st->type_size * st->heap_size;
+	st->heap = unmap_malloc(sizeof(void *) * st->list_size);
+	st->heap[0] = unmap_malloc(block * st->list_size);
+	p = st->heap[0];
+	for(i = 1; i < st->list_size; i++){
+		st->heap[i] = p + (block * i);
+	}
 	return st;
 }
 
 /* ストレージの切り分け */
-static void *unmap_alloc(unmap_t *list, unmap_storage_t *st)
+static void *unmap_storage_alloc(unmap_storage_t *st)
 {
 	char *p = 0;
-	if(st->size_num >= st->heap_size){
+	if(st->data_index >= st->heap_size){
 		/* 用意した領域を使い切った */
-		st->size_num = 0;	/* 先頭を指し直す */
-		st->length++;		/* 次の領域へ */
-		if(st->length >= st->array_size){
+		st->data_index = 0;	/* 先頭を指し直す */
+		st->list_index++;	/* 次の領域へ */
+		if(st->list_index >= st->list_size){
+			size_t i = 0;
+			size_t len = 0;
+			size_t size = st->type_size * st->heap_size;	/* 一塊の大きさ */
 			/* 領域管理配列を拡張する */
-			st->array_size += st->length >> 1;
-			st->heap = unmap_realloc(st->heap, sizeof(void *) * st->array_size, sizeof(void *) * st->length);
+			st->list_size *= 2;
+			st->heap = unmap_realloc(st->heap, sizeof(void *) * st->list_size, sizeof(void *) * st->list_index);
+			/* 新しい領域を確保する */
+			len = st->list_size - st->list_index;
+			st->heap[st->list_index] = unmap_malloc(size * len);
+			p = st->heap[st->list_index];
+			for(i = 1; i < len; i++){
+				st->heap[st->list_index + i] = p + (size * i);
+			}
 		}
-		/* 新しい領域を確保する */
-		st->heap[st->length] = unmap_malloc(st->type_size * st->heap_size);
 	}
-	p = st->heap[st->length];
+	p = st->heap[st->list_index];
 	/* 使用していない領域を返す */
-	return p + (st->type_size * st->size_num++);
+	return p + (st->type_size * st->data_index++);
 }
 
 /* unmap_tツリーを生成、値の格納場所を用意 */
@@ -239,7 +254,7 @@ static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box
 	while(--level){
 		rl = (node >> level) & 0x01;	/* 方向選択 */
 		if(tree->tree[rl] == NULL){
-			tree->tree[rl] = (unmap_tree_t *)unmap_alloc(list, list->tree_heap);
+			tree->tree[rl] = (unmap_tree_t *)unmap_storage_alloc(list->tree_heap);
 		}
 		tree = tree->tree[rl];
 	}
@@ -248,7 +263,7 @@ static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box
 	data = tree->tree[rl];
 	if(data == NULL){
 		/* unmap_data_tオブジェクト生成 */
-		data = (unmap_data_t *)unmap_alloc(list, list->data_heap);
+		data = (unmap_data_t *)unmap_storage_alloc(list->data_heap);
 		data->box = *box;
 		tree->tree[rl] = data;
 	}
@@ -272,7 +287,7 @@ static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_bo
 		}
 	}
 	/* unmap_data_tオブジェクト生成 */
-	tmp = (unmap_data_t *)unmap_alloc(list, list->data_heap);
+	tmp = (unmap_data_t *)unmap_storage_alloc(list->data_heap);
 	tmp->box = *box;
 	back->next = tmp;
 	return tmp;

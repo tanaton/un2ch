@@ -35,9 +35,9 @@ typedef struct unmap_data_st {
 typedef struct unmap_storage_st {
 	void **heap;				/* メモリ */
 	size_t heap_size;			/* 一度に確保するサイズ */
-	size_t array_size;			/* 確保する最大回数 */
-	size_t length;				/* 参照しているメモリブロック */
-	size_t size_num;			/* 参照しているメモリアドレス */
+	size_t list_size;			/* 確保する最大回数 */
+	size_t list_index;			/* 参照しているメモリブロック */
+	size_t data_index;			/* 参照しているメモリアドレス */
 	size_t type_size;			/* 管理する型のサイズ */
 } unmap_storage_t;
 
