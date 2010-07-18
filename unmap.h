@@ -3,9 +3,10 @@
 
 #include <stdlib.h>
 
-#define UNMAP_PRIMES_TABLE			(257)
-#define UNMAP_HEAP_ARRAY_SIZE		(16)
-#define UNMAP_CACHE_SIZE			(0x0F)
+#define UNMAP_PRIMES_TABLE				(257)
+#define UNMAP_HEAP_ARRAY_SIZE			(2)
+#define UNMAP_HEAP_EXTENSION_SIZE(n)	((n) * 2)
+#define UNMAP_CACHE_SIZE				(0x0F)
 
 #define unmap_free(unmap, free_func)			\
 	do { unmap_free_func((unmap), (free_func)); (unmap) = NULL; } while(0)
@@ -51,11 +52,11 @@ typedef struct unmap_st {
 } unmap_t;
 
 /* プロトタイプ宣言 */
-unmap_t *unmap_init(size_t max_level, size_t tree_heap_size, size_t data_heap_size);
-void unmap_free_func(unmap_t *list, void (*free_func)(void *));
-int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, void (*free_func)(void *));
-void *unmap_get(unmap_t *list, const char *key, size_t key_size);
-size_t unmap_size(unmap_t *list);
-void *unmap_at(unmap_t *list, size_t at);
+extern unmap_t *unmap_init(size_t max_level, size_t tree_heap_size, size_t data_heap_size);
+extern void unmap_free_func(unmap_t *list, void (*free_func)(void *));
+extern int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, void (*free_func)(void *));
+extern void *unmap_get(unmap_t *list, const char *key, size_t key_size);
+extern size_t unmap_size(unmap_t *list);
+extern void *unmap_at(unmap_t *list, size_t at);
 
 #endif /* INCLUDE_UNMAP_H */
