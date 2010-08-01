@@ -9,7 +9,8 @@
 /* 板データ保存パス */
 #define UN2CH_BBS_DATA_FILENAME			"/2ch/dat/ita.data"
 /* 板データマスターURL */
-#define UN2CH_BBS_DATA_URL				"http://menu.2ch.net/bbsmenu.html"
+#define UN2CH_BBS_DATA_URL				"http://menu.70.kg/bbsmenu.html"
+//#define UN2CH_BBS_DATA_URL				"http://menu.2ch.net/bbsmenu.html"
 /* バージョン */
 #define UN2CH_VERSION					"Monazilla/1.00 (un2ch/0.0.1)"
 /* dat保管フォルダ名 */
