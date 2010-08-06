@@ -5,7 +5,7 @@
 #include "un2ch.h"
 #include "unstring.h"
 #include "unarray.h"
-#include "read2.h"
+#include "favo.h"
 
 static void *unmalloc(size_t size);
 static void sl_free(void *data);

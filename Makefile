@@ -10,7 +10,7 @@ SRCS = un2ch.c unstring.c unarray.c crc32.c unmap.c
 OBJS = $(SRCS:.c=.o)
 READSRCS = read.c
 READOBJS = $(READSRCS:.c=.o)
-FAVOSRCS = read2.c
+FAVOSRCS = favo.c
 FAVOOBJS = $(FAVOSRCS:.c=.o)
 
 .PHONY: all
