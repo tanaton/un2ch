@@ -133,7 +133,7 @@ void *unmap_at(unmap_t *list, size_t at)
 		/* 格納数よりも少ない場合 */
 		st = list->data_heap;
 		p = st->heap[at / st->heap_size];
-		data = (unmap_data_t *)(p + (st->type_size * (at % st->heap_size)));
+		data = (unmap_data_t *)(p + (st->type_size * (at % st->list_index)));
 		ret = data->data;
 	}
 	return ret;
