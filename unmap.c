@@ -295,6 +295,7 @@ static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box
 					mixed->type = UNMAP_TYPE_TREE;
 					break;
 				} else {
+					/* 新しいtree上でのみ通過する */
 					tree->tree[rl2].mixed = data;
 					tree->tree[rl2].type = UNMAP_TYPE_DATA;
 				}
