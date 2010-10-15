@@ -263,23 +263,77 @@ static void unmap_storage_data_free(unmap_storage_t *st, void (*free_func)(void 
 static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box_t *box, size_t level)
 {
 	size_t rl = 0;
+	size_t rl2 = 0;
 	size_t node = box->node;
 	unmap_data_t *data = 0;
+	unmap_mixed_t *mixed = 0;
 	while(--level){
 		rl = (node >> level) & 0x01;	/* 方向選択 */
-		if(tree->tree[rl] == NULL){
-			tree->tree[rl] = (unmap_tree_t *)unmap_storage_alloc(list->tree_heap);
+		mixed = &(tree->tree[rl]);
+		switch(mixed->type){
+		case UNMAP_TYPE_TREE:
+			tree = mixed->mixed;
+			break;
+		case UNMAP_TYPE_DATA:
+			data = mixed->mixed;
+			if(node == data->box.node){
+				return data;
+			} else {
+				/* unmap_tree_tオブジェクト生成 */
+				tree = unmap_storage_alloc(list->tree_heap);
+				mixed->mixed = tree;
+				mixed->type = UNMAP_TYPE_TREE;
+			}
+			break;
+		default:
+			if(data != NULL){
+				rl2 = (data->box.node >> level) & 0x01;
+				if(rl == rl2){
+					/* unmap_tree_tオブジェクト生成 */
+					tree = unmap_storage_alloc(list->tree_heap);
+					mixed->mixed = tree;
+					mixed->type = UNMAP_TYPE_TREE;
+					break;
+				} else {
+					tree->tree[rl2].mixed = data;
+					tree->tree[rl2].type = UNMAP_TYPE_DATA;
+				}
+			}
+			/* unmap_data_tオブジェクト生成 */
+			data = unmap_storage_alloc(list->data_heap);
+			data->box = *box;
+			mixed->mixed = data;
+			mixed->type = UNMAP_TYPE_DATA;
+			return data;
 		}
-		tree = tree->tree[rl];
 	}
 	rl = node & 0x01;	/* 方向選択 */
+	mixed = &(tree->tree[rl]);
 	/* 最深部 */
-	data = tree->tree[rl];
-	if(data == NULL){
-		/* unmap_data_tオブジェクト生成 */
-		data = (unmap_data_t *)unmap_storage_alloc(list->data_heap);
-		data->box = *box;
-		tree->tree[rl] = data;
+	if(data != NULL){
+		rl2 = data->box.node & 0x01;
+		if(rl == rl2){
+			mixed->mixed = data;
+			mixed->type = UNMAP_TYPE_DATA;
+		} else {
+			tree->tree[rl2].mixed = data;
+			tree->tree[rl2].type = UNMAP_TYPE_DATA;
+			/* unmap_data_tオブジェクト生成 */
+			data = unmap_storage_alloc(list->data_heap);
+			data->box = *box;
+			mixed->mixed = data;
+			mixed->type = UNMAP_TYPE_DATA;
+		}
+	} else {
+		if(mixed->type != UNMAP_TYPE_DATA){
+			/* unmap_data_tオブジェクト生成 */
+			data = unmap_storage_alloc(list->data_heap);
+			data->box = *box;
+			mixed->mixed = data;
+			mixed->type = UNMAP_TYPE_DATA;
+		} else {
+			data = mixed->mixed;
+		}
 	}
 	/* unmap_data_tオブジェクトを返す */
 	return data;

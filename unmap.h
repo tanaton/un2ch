@@ -11,6 +11,13 @@
 #define unmap_free(unmap, free_func)			\
 	do { unmap_free_func((unmap), (free_func)); (unmap) = NULL; } while(0)
 
+/* 型の種類 */
+typedef enum {
+	UNMAP_TYPE_NONE = 0,
+	UNMAP_TYPE_DATA,
+	UNMAP_TYPE_TREE
+} unmap_type_enum_t;
+
 /* 32(64)bitハッシュ値 */
 typedef unsigned long unmap_hash_t;
 
@@ -20,9 +27,15 @@ typedef struct unmap_box_st {
 	unmap_hash_t node;	/* ノード値(ハッシュ値から算出) */
 } unmap_box_t;
 
+/* 木とデータの混合 */
+typedef struct unmap_mixed_st {
+	unmap_type_enum_t type;
+	void *mixed;
+} unmap_mixed_t;
+
 /* 木構造 */
 typedef struct unmap_tree_st {
-	void *tree[2];		/* 枝を二つまで管理 */
+	unmap_mixed_t tree[2];		/* 枝を二つまで管理 */
 } unmap_tree_t;
 
 /* 連結リスト */
