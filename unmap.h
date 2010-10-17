@@ -3,10 +3,8 @@
 
 #include <stdlib.h>
 
-#define UNMAP_PRIMES_TABLE				(257)
 #define UNMAP_HEAP_ARRAY_SIZE			(2)
 #define UNMAP_HEAP_EXTENSION_SIZE(n)	((n) * 2)
-#define UNMAP_CACHE_SIZE				(0x0F)
 
 #define unmap_free(unmap, free_func)			\
 	do { unmap_free_func((unmap), (free_func)); (unmap) = NULL; } while(0)
@@ -60,7 +58,6 @@ typedef struct unmap_st {
 	unmap_storage_t *tree_heap;	/* メモリ空間ツリー用 */
 	unmap_storage_t *data_heap;	/* メモリ空間データ用 */
 	unmap_tree_t *tree;			/* 最初の枝 */
-	unmap_data_t *cache[UNMAP_CACHE_SIZE + 1];	/* キャッシュ */
 	size_t max_level;			/* 最大階層 */
 } unmap_t;
 

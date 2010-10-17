@@ -13,8 +13,6 @@ static void unmap_storage_free(unmap_storage_t *st);
 static void unmap_storage_data_free(unmap_storage_t *st, void (*free_func)(void *));
 static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box_t *box, size_t level);
 static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_box_t *box);
-static void unmap_cache_set(unmap_t *list, unmap_data_t *data);
-static unmap_data_t *unmap_cache_get(unmap_t *list, unmap_box_t *box);
 
 /* unmap_tオブジェクト生成・初期化 */
 unmap_t *unmap_init(size_t max_level, size_t tree_heap_size, size_t data_heap_size)
@@ -79,7 +77,6 @@ int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, void 
 		free_func(tmp->data);
 	}
 	tmp->data = data;
-	unmap_cache_set(list, tmp);	/* キャッシュする */
 	return 0;
 }
 
@@ -93,16 +90,11 @@ void *unmap_get(unmap_t *list, const char *key, size_t key_size)
 	}
 	/* hashを計算する */
 	unmap_hash_create(key, key_size, list->max_level, &box);
-	/* キャッシュから探索 */
-	data = unmap_cache_get(list, &box);
-	if(data == NULL){
-		/* unmap_tツリーから探索 */
-		data = unmap_area_get(list, list->tree, &box, list->max_level);
-		if(data->box.hash != box.hash){
-			/* 連結リスト上を探索 */
-			data = unmap_data_next(list, data, &box);
-		}
-		unmap_cache_set(list, data);	/* キャッシュする */
+	/* unmap_tツリーから探索 */
+	data = unmap_area_get(list, list->tree, &box, list->max_level);
+	if(data->box.hash != box.hash){
+		/* 連結リスト上を探索 */
+		data = unmap_data_next(list, data, &box);
 	}
 	return data->data;
 }
@@ -360,21 +352,5 @@ static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_bo
 	tmp->box = *box;
 	back->next = tmp;
 	return tmp;
-}
-
-/* キャッシュにセットする */
-static void unmap_cache_set(unmap_t *list, unmap_data_t *data)
-{
-	list->cache[(data->box.node & UNMAP_CACHE_SIZE)] = data;
-}
-
-/* キャッシュから探索 */
-static unmap_data_t *unmap_cache_get(unmap_t *list, unmap_box_t *box)
-{
-	unmap_data_t *data = list->cache[(box->node & UNMAP_CACHE_SIZE)];
-	if((data == NULL) || (data->box.hash != box->hash)){
-		data = NULL;
-	}
-	return data;
 }
 

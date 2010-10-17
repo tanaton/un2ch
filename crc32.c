@@ -114,7 +114,6 @@ static const unmap_hash_t primes_s[] = {
 void unmap_hash_create(const char *str, size_t size, size_t max_level, unmap_box_t *box)
 {
 	unmap_hash_t crc32 = 0xFFFFFFFFUL;
-	if(size == 0) return;
 	while(size--){
 		crc32 = crc32_table[(crc32 >> ((sizeof(unmap_hash_t) * 8) - 8)) ^ *str++] ^ (crc32 << 8);
 	}
