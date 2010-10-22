@@ -58,7 +58,7 @@ void unmap_free_func(unmap_t *list, void (*free_func)(void *))
 }
 
 /* unmap_tオブジェクトに値をセットする */
-int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, void (*free_func)(void *))
+int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data)
 {
 	unmap_data_t *tmp = 0;
 	unmap_box_t box = {0};
@@ -71,10 +71,6 @@ int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, void 
 	if(tmp->box.hash != box.hash){
 		/* 連結リストをたどる */
 		tmp = unmap_data_next(list, tmp, &box);
-	}
-	if((tmp->data != NULL) && (free_func != NULL)){
-		/* すでにデータが格納されている場合、開放する */
-		free_func(tmp->data);
 	}
 	tmp->data = data;
 	return 0;

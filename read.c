@@ -125,7 +125,7 @@ static unmap_t *get_server(bool flag)
 			if(list == NULL){
 				list = unarray_init(32);
 				unarray_push(list, nich);
-				unmap_set(hash, server->data, server->length, list, NULL);
+				unmap_set(hash, server->data, server->length, list);
 			} else {
 				unarray_push(list, nich);
 			}
@@ -232,7 +232,8 @@ static unmap_t *get_board_res(unstr_t *filename)
 			if(p != NULL){
 				nres = unmalloc(sizeof(int));
 				*nres = (int)strtol(p + 2, NULL, 10); /* +2は、空白と開きカッコをスキップ */
-				unmap_set(resmap, p1->data, p1->length, nres, free);
+				free(unmap_get(resmap, p1->data, p1->length));
+				unmap_set(resmap, p1->data, p1->length, nres);
 			}
 		}
 		unstr_free(line);

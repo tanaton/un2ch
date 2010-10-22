@@ -71,7 +71,7 @@ typedef struct unmap_st {
 /* プロトタイプ宣言 */
 extern unmap_t *unmap_init(size_t max_level, size_t tree_heap_size, size_t data_heap_size);
 extern void unmap_free_func(unmap_t *list, void (*free_func)(void *));
-extern int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data, void (*free_func)(void *));
+extern int unmap_set(unmap_t *list, const char *key, size_t key_size, void *data);
 extern void *unmap_get(unmap_t *list, const char *key, size_t key_size);
 extern size_t unmap_size(unmap_t *list);
 extern void *unmap_at(unmap_t *list, size_t at);
