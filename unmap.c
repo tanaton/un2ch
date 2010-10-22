@@ -258,74 +258,71 @@ static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box
 	size_t rl2 = 0;
 	size_t node = box->node;
 	unmap_data_t *data = 0;
-	unmap_mixed_t *mixed = 0;
-	while(--level){
-		rl = (node >> level) & 0x01;	/* 方向選択 */
-		mixed = &(tree->tree[rl]);
-		switch(mixed->type){
+	for(UNMAP_TREE_NEXT(level); level > 0 && level <= 64; UNMAP_TREE_NEXT(level)){
+		rl = (node >> level) & UNMAP_TREE_FILTER;	/* 方向選択 */
+		switch(UNMAP_TYPE_GET(tree, rl)){
 		case UNMAP_TYPE_TREE:
-			tree = mixed->mixed;
+			tree = tree->tree[rl];
 			break;
 		case UNMAP_TYPE_DATA:
-			data = mixed->mixed;
+			data = tree->tree[rl];
 			if(node == data->box.node){
 				return data;
 			} else {
 				/* unmap_tree_tオブジェクト生成 */
-				tree = unmap_storage_alloc(list->tree_heap);
-				mixed->mixed = tree;
-				mixed->type = UNMAP_TYPE_TREE;
+				tree->tree[rl] = unmap_storage_alloc(list->tree_heap);
+				UNMAP_TYPE_SET(tree, rl, UNMAP_TYPE_TREE);
+				tree = tree->tree[rl];
 			}
 			break;
 		default:
 			if(data != NULL){
-				rl2 = (data->box.node >> level) & 0x01;
+				rl2 = (data->box.node >> level) & UNMAP_TREE_FILTER;
 				if(rl == rl2){
 					/* unmap_tree_tオブジェクト生成 */
-					tree = unmap_storage_alloc(list->tree_heap);
-					mixed->mixed = tree;
-					mixed->type = UNMAP_TYPE_TREE;
+					tree->tree[rl] = unmap_storage_alloc(list->tree_heap);
+					UNMAP_TYPE_SET(tree, rl, UNMAP_TYPE_TREE);
+					tree = tree->tree[rl];
 					break;
 				} else {
 					/* 新しいtree上でのみ通過する */
-					tree->tree[rl2].mixed = data;
-					tree->tree[rl2].type = UNMAP_TYPE_DATA;
+					tree->tree[rl2] = data;
+					UNMAP_TYPE_SET(tree, rl2, UNMAP_TYPE_DATA);
 				}
 			}
 			/* unmap_data_tオブジェクト生成 */
 			data = unmap_storage_alloc(list->data_heap);
 			data->box = *box;
-			mixed->mixed = data;
-			mixed->type = UNMAP_TYPE_DATA;
+			tree->tree[rl] = data;
+			UNMAP_TYPE_SET(tree, rl, UNMAP_TYPE_DATA);
 			return data;
 		}
 	}
-	rl = node & 0x01;	/* 方向選択 */
-	mixed = &(tree->tree[rl]);
+	rl = node & UNMAP_TREE_FILTER;	/* 方向選択 */
 	/* 最深部 */
 	if(data != NULL){
-		rl2 = data->box.node & 0x01;
+		rl2 = data->box.node & UNMAP_TREE_FILTER;
 		if(rl == rl2){
-			mixed->mixed = data;
-			mixed->type = UNMAP_TYPE_DATA;
+			tree->tree[rl] = data;
+			UNMAP_TYPE_SET(tree, rl, UNMAP_TYPE_DATA);
 		} else {
-			tree->tree[rl2].mixed = data;
-			tree->tree[rl2].type = UNMAP_TYPE_DATA;
+			tree->tree[rl2] = data;
+			UNMAP_TYPE_SET(tree, rl2, UNMAP_TYPE_DATA);
 			/* unmap_data_tオブジェクト生成 */
 			data = unmap_storage_alloc(list->data_heap);
 			data->box = *box;
-			mixed->mixed = data;
-			mixed->type = UNMAP_TYPE_DATA;
+			tree->tree[rl] = data;
+			UNMAP_TYPE_SET(tree, rl, UNMAP_TYPE_DATA);
 		}
 	} else {
-		if(mixed->type != UNMAP_TYPE_DATA){
+		if(UNMAP_TYPE_GET(tree, rl) != UNMAP_TYPE_DATA){
 			/* unmap_data_tオブジェクト生成 */
 			data = unmap_storage_alloc(list->data_heap);
 			data->box = *box;
-			mixed->mixed = data;
-			mixed->type = UNMAP_TYPE_DATA;
+			tree->tree[rl] = data;
+			UNMAP_TYPE_SET(tree, rl, UNMAP_TYPE_DATA);
 		} else {
-			data = mixed->mixed;
+			data = tree->tree[rl];
 		}
 	}
 	/* unmap_data_tオブジェクトを返す */

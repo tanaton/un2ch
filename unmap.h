@@ -5,16 +5,28 @@
 
 #define UNMAP_HEAP_ARRAY_SIZE			(2)
 #define UNMAP_HEAP_EXTENSION_SIZE(n)	((n) * 2)
-
-#define unmap_free(unmap, free_func)			\
-	do { unmap_free_func((unmap), (free_func)); (unmap) = NULL; } while(0)
+#define UNMAP_TREE_BRANCH				(0x10)
+#define UNMAP_TREE_FILTER				(UNMAP_TREE_BRANCH - 1)
+#define UNMAP_TREE_NEXT(n)				((n) -= 4)
 
 /* 型の種類 */
-typedef enum {
-	UNMAP_TYPE_NONE = 0,
-	UNMAP_TYPE_DATA,
-	UNMAP_TYPE_TREE
-} unmap_type_enum_t;
+#define UNMAP_TYPE_NONE					(0x00)
+#define UNMAP_TYPE_DATA					(0x01)
+#define UNMAP_TYPE_TREE					(0x02)
+
+/* 型情報を取得 */
+#define UNMAP_TYPE_GET(tree, level)					\
+	(((tree)->type >> ((level) * 2)) & 0x03)
+
+/* 型情報を設定 */
+#define UNMAP_TYPE_SET(tree, level, t)				\
+	do {											\
+		(tree)->type &= (~(0x03 << ((level) * 2)));	\
+		(tree)->type |= ((t) << ((level) * 2));		\
+	} while(0)
+
+#define unmap_free(unmap, free_func)				\
+	do { unmap_free_func((unmap), (free_func)); (unmap) = NULL; } while(0)
 
 /* 32(64)bitハッシュ値 */
 typedef unsigned long unmap_hash_t;
@@ -25,15 +37,10 @@ typedef struct unmap_box_st {
 	unmap_hash_t node;	/* ノード値(ハッシュ値から算出) */
 } unmap_box_t;
 
-/* 木とデータの混合 */
-typedef struct unmap_mixed_st {
-	unmap_type_enum_t type;
-	void *mixed;
-} unmap_mixed_t;
-
 /* 木構造 */
 typedef struct unmap_tree_st {
-	unmap_mixed_t tree[2];		/* 枝を二つまで管理 */
+	size_t type;					/* 枝の型を管理(2bitずつ) */
+	void *tree[UNMAP_TREE_BRANCH];	/* 枝を管理 */
 } unmap_tree_t;
 
 /* 連結リスト */
