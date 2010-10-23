@@ -11,14 +11,14 @@ static unmap_storage_t *unmap_storage_init(unmap_t *list, size_t tsize, size_t h
 static void *unmap_storage_alloc(unmap_storage_t *st);
 static void unmap_storage_free(unmap_storage_t *st);
 static void unmap_storage_data_free(unmap_storage_t *st, void (*free_func)(void *));
-static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box_t *box, size_t level);
+static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box_t *box, int level);
 static unmap_data_t *unmap_data_next(unmap_t *list, unmap_data_t *data, unmap_box_t *box);
 
 /* unmap_tオブジェクト生成・初期化 */
-unmap_t *unmap_init(size_t max_level, size_t tree_heap_size, size_t data_heap_size)
+unmap_t *unmap_init(int max_level, size_t tree_heap_size, size_t data_heap_size)
 {
 	unmap_t *list = 0;
-	if((max_level > sizeof(size_t) * 8) || (max_level < 4)){
+	if((max_level > sizeof(int) * 8) || (max_level < 4)){
 		/* 33bit以上3bit以下の場合 */
 		return NULL;
 	}
@@ -248,13 +248,13 @@ static void unmap_storage_data_free(unmap_storage_t *st, void (*free_func)(void 
 }
 
 /* unmap_tツリーを生成、値の格納場所を用意 */
-static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box_t *box, size_t level)
+static unmap_data_t *unmap_area_get(unmap_t *list, unmap_tree_t *tree, unmap_box_t *box, int level)
 {
 	size_t rl = 0;
 	size_t rl2 = 0;
 	size_t node = box->node;
 	unmap_data_t *data = 0;
-	for(UNMAP_TREE_NEXT(level); level > 0 && level <= 64; UNMAP_TREE_NEXT(level)){
+	for(UNMAP_TREE_NEXT(level); level > 0; UNMAP_TREE_NEXT(level)){
 		rl = (node >> level) & UNMAP_TREE_FILTER;	/* 方向選択 */
 		switch(UNMAP_TYPE_GET(tree, rl)){
 		case UNMAP_TYPE_TREE:
