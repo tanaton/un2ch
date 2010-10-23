@@ -24,7 +24,7 @@ unmap_t *unmap_init(int max_level, size_t tree_heap_size, size_t data_heap_size)
 	}
 	/* 初期値設定 */
 	if(tree_heap_size == 0){
-		tree_heap_size = 1024;
+		tree_heap_size = 64;
 	}
 	if(data_heap_size == 0){
 		data_heap_size = 512;
