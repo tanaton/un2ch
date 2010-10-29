@@ -214,6 +214,7 @@ static void unmap_storage_data_free(unmap_storage_t *st, void (*free_func)(void 
 		return;
 	}
 	if(free_func != NULL){
+		/* 解放用関数がある場合 */
 		list_size = st->list_size;
 		heap_size = st->heap_size;
 		type_size = st->type_size;
@@ -222,7 +223,7 @@ static void unmap_storage_data_free(unmap_storage_t *st, void (*free_func)(void 
 			for(i = 0; i < heap_size; i++){
 				data = (unmap_data_t *)((char *)p[j] + (type_size * i));
 				if(data->data != NULL){
-					/* データが格納されている and 関数が登録されいる */
+					/* データが格納されている */
 					free_func(data->data);
 				}
 				data->data = NULL;
