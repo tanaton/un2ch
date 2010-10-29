@@ -114,11 +114,11 @@ static const unmap_hash_t primes_s[] = {
 unmap_box_t unmap_hash_create(const char *str, size_t size, size_t max_level)
 {
 	unmap_box_t box;
-	unmap_hash_t crc32 = 0xFFFFFFFFUL;
+	unmap_hash_t crc32 = 0xFFFFFFFFU;
 	while(size--){
 		crc32 = crc32_table[((unsigned char)crc32) ^ *str++] ^ (crc32 >> 8);
 	}
-	box.hash = crc32 ^ 0xFFFFFFFFUL;
+	box.hash = crc32;
 	box.node = crc32 % primes_s[max_level]; /* 素数で割る */
 	return box;
 }
