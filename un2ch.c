@@ -55,13 +55,7 @@ static char g_sabafilter[UN2CH_G_SABAFILTER_SIZE][25] = {
 	{ 0x83, 0x60, 0x83, 0x83, 0x83, 0x62, 0x83, 0x67, 0x82, 0x51, 0x82, 0x83, 0x82, 0x88, 0x81, 0x97, 0x82, 0x68, 0x82, 0x71, 0x82, 0x62, 0x00}
 };
 
-static const char *g_bourbon_url[UN2CH_G_BOURBON_URL_SIZE] = {
-	"bg20.2ch.net",
-	"bg21.2ch.net",
-	"bg22.2ch.net",
-	"bg23.2ch.net",
-	"bg24.2ch.net"
-};
+static const char *g_bourbon_url = "bg20.2ch.net";
 
 /* 短パンマン ★ (Shift-JIS) */
 static const char g_tanpan[] = { 0x92, 0x5A, 0x83, 0x70, 0x83, 0x93, 0x83, 0x7d, 0x83, 0x93, 0x20, 0x81, 0x9a, '\0'};
@@ -762,8 +756,7 @@ static unstr_t* bourbon_request(un2ch_t *init)
 	init->code = 0;
 	init->mod = time(NULL);
 
-	/* TODO:スレッドセーフな乱数にしたい */
-	host = unstr_init(g_bourbon_url[clock() % UN2CH_G_BOURBON_URL_SIZE]);
+	host = unstr_init(g_bourbon_url);
 	tmp = unstr_init_memory(UN2CH_CHAR_LENGTH);
 
 	if(init->mode == UN2CH_MODE_THREAD){
