@@ -4,10 +4,10 @@ NOFAVOPROGRAM = nofavo2ch
 CC = gcc
 LINKER = gcc
 CFLAGS = -O2 -Wall
-X = -lcurl -lpthread
+X = -lcurl -lpthread -lunmap -lunstring
 RM = rm -rf
 
-SRCS = un2ch.c unstring.c unarray.c crc32.c unmap.c
+SRCS = un2ch.c unarray.c
 OBJS = $(SRCS:.c=.o)
 READSRCS = read.c
 READOBJS = $(READSRCS:.c=.o)

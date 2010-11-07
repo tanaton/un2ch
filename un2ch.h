@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdbool.h>
-#include "unstring.h"
+#include <unstring.h>
 
 /* 板データ保存パス */
 #define UN2CH_BBS_DATA_FILENAME			"/2ch/dat/ita.data"

@@ -1,9 +1,9 @@
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
-#include "unmap.h"
+#include <unmap.h>
+#include <unstring.h>
 #include "un2ch.h"
-#include "unstring.h"
 #include "unarray.h"
 #include "favo.h"
 
@@ -94,7 +94,7 @@ static unmap_t *get_board_data(void)
 {
 	size_t index = 0;
 	size_t length = 0;
-	unmap_t *map = unmap_init(16, 32, 32);
+	unmap_t *map = unmap_init(16);
 	unstr_t *line = 0;
 	unstr_t *filename = unstr_init(UN2CH_GET_BOARD_PATH);
 	unstr_t *data = unstr_file_get_contents(filename);
@@ -136,7 +136,7 @@ static unmap_t *get_server(bool flag)
 		perror("板一覧ファイルが無いよ。\n");
 	}
 	board_map = get_board_data();
-	hash = unmap_init(16, 32, 32);
+	hash = unmap_init(16);
 	server = unstr_init_memory(32);
 	board = unstr_init_memory(32);
 	line = unstr_strtok(bl, "\n", &index);
@@ -249,7 +249,7 @@ static unmap_t *get_board_res(unstr_t *filename)
 	if(unstr_empty(data)){
 		return NULL;
 	}
-	resmap = unmap_init(16, 32, 128);
+	resmap = unmap_init(16);
 	p1 = unstr_init_memory(32);
 	p2 = unstr_init_memory(128);
 	

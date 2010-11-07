@@ -1,6 +1,9 @@
-■2010年06月29日付近のun2chのコンパイル方法。
+■2010年11月08日付近のun2chのコンパイル方法。
+・libunmapをインストール
+  https://github.com/tanaton/unmap
+・libunstringをインストール
+  https://github.com/tanaton/unstring
 ・libcurlをインストール(7.19.0以上推奨)
-・google-perftoolsをインストール(1.5以上推奨)
 ・makeする
 
 ■dat保存場所について
