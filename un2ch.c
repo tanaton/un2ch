@@ -26,7 +26,7 @@ static bool file_exists(unstr_t *filename, struct stat *data);
 static void touch(unstr_t *filename, time_t atime, time_t mtime);
 static bool make_dir_all(unstr_t *path);
 
-#define UN2CH_G_SABAKILL_SIZE		(11)
+#define UN2CH_G_SABAKILL_SIZE		(12)
 #define UN2CH_G_SABAFILTER_SIZE		(4)
 #define UN2CH_G_BOURBON_URL_SIZE	(5)
 
@@ -41,7 +41,8 @@ static const char *g_sabakill[UN2CH_G_SABAKILL_SIZE] = {
 	"c-au.2ch.net",
 	"c-others1.2ch.net",
 	"movie.2ch.net",
-	"dubai.2ch.net"
+	"dubai.2ch.net",
+	"ipv6.2ch.net"
 };
 
 static char g_sabafilter[UN2CH_G_SABAFILTER_SIZE][25] = {
@@ -153,14 +154,14 @@ static un2ch_code_t mode_change(un2ch_t *init)
 	if((!unstr_empty(init->thread_number)) &&
 	   (!unstr_empty(init->board)) &&
 	   (!unstr_empty(init->server))){
-		unstr_sprintf(init->logfile, "%$/%$/%$/%$/%$",
-			init->folder, init->server, init->board, init->thread_index, init->thread);
+		unstr_sprintf(init->logfile, "%$/%$/%$/%$",
+			init->folder, init->board, init->thread_index, init->thread);
 		init->mode = UN2CH_MODE_THREAD;
 		ret = UN2CH_OK;
 	} else if((!unstr_empty(init->board)) &&
 			  (!unstr_empty(init->server))){
-		unstr_sprintf(init->logfile, "%$/%$/%$/%s",
-			init->folder, init->server, init->board, UN2CH_BOARD_SUBJECT_FILENAME);
+		unstr_sprintf(init->logfile, "%$/%$/%s",
+			init->folder, init->board, UN2CH_BOARD_SUBJECT_FILENAME);
 		init->mode = UN2CH_MODE_BOARD;
 		ret = UN2CH_OK;
 	} else {
@@ -498,8 +499,8 @@ unstr_t* un2ch_get_board_name(un2ch_t *init)
 	unstr_t *url = 0;
 	unstr_t *title = 0;
 	unstr_t *data = 0;
-	unstr_t *set = unstr_sprintf(NULL, "%$/%$/%$/setting.txt",
-		init->folder, init->server, init->board);
+	unstr_t *set = unstr_sprintf(NULL, "%$/%$/setting.txt",
+		init->folder, init->board);
 	time_t times = time(NULL);
 	time_t mod = 0;
 	struct stat st;

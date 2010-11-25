@@ -102,7 +102,7 @@ static unmap_t *get_board_data(void)
 	while(line != NULL){
 		length = unstr_strlen(line);
 		if(length != 0){
-			unstr_free_func(unmap_get(map, line->data, length));
+			unstr_free_func(unmap_find(map, line->data, length));
 			unmap_set(map, line->data, length, unstr_copy(line));
 		}
 		unstr_free(line);
@@ -142,12 +142,12 @@ static unmap_t *get_server(bool flag)
 	line = unstr_strtok(bl, "\n", &index);
 	while(line != NULL){
 		if(unstr_sscanf(line, "$/$<>", server, board) == 2){
-			if(unmap_get(board_map, board->data, unstr_strlen(board)) != NULL){
+			if(unmap_find(board_map, board->data, unstr_strlen(board)) != NULL){
 				nich = unmalloc(sizeof(nich_t));
 				nich->server = unstr_copy(server);
 				nich->board = unstr_copy(board);
 				nich->thread = NULL;
-				list = unmap_get(hash, server->data, server->length);
+				list = unmap_find(hash, server->data, server->length);
 				if(list == NULL){
 					list = unarray_init(32);
 					unarray_push(list, nich);
@@ -211,7 +211,7 @@ static unarray_t *get_board(un2ch_t *get, nich_t *nich)
 			if((resmap != NULL) && (p != NULL)){
 				/* +2は、空白と開きカッコをスキップ */
 				nres = (int)strtol(p + 2, NULL, 10);
-				res = unmap_get(resmap, p1->data, p1->length);
+				res = unmap_find(resmap, p1->data, p1->length);
 				if((res != NULL) && (*res != nres)){
 					/* レス数が違う */
 					unarray_push(tl, n);
@@ -260,7 +260,7 @@ static unmap_t *get_board_res(unstr_t *filename)
 			if(p != NULL){
 				nres = unmalloc(sizeof(int));
 				*nres = (int)strtol(p + 2, NULL, 10); /* +2は、空白と開きカッコをスキップ */
-				free(unmap_get(resmap, p1->data, p1->length));
+				free(unmap_find(resmap, p1->data, p1->length));
 				unmap_set(resmap, p1->data, p1->length, nres);
 			}
 		}
