@@ -366,11 +366,12 @@ static unstr_t* bourbon_data(un2ch_t *init)
 
 	data = bourbon_request(init);
 	if(unstr_empty(data)){
-		unstr_free(data);	
+		unstr_free(data);
 		return NULL;
 	}
 
-	tmp = unstr_substr_char(data->data, 256);
+	tmp = unstr_init_memory(256);
+	unstr_substr_char(tmp, data->data, 256);
 	if((unstr_strstr_char(tmp, g_tanpan) != NULL) ||
 	   (unstr_strstr_char(tmp, g_nagoya) != NULL))
 	{
@@ -485,7 +486,7 @@ static size_t returned_data(void *ptr, size_t size, size_t nmemb, void *data)
 	size_t length = size * nmemb;
 	unstr_t *sfer = (unstr_t *)data;
 	if((sfer->length + length + 1) >= sfer->heap){
-		unstr_alloc(sfer, UN2CH_TCP_IP_FRAME_SIZE + length + 1);
+		unstr_alloc(sfer, length << 1);
 	}
 	memcpy(&(sfer->data[sfer->length]), ptr, length);
 	sfer->length += length;
@@ -729,7 +730,8 @@ static unstr_t* request(un2ch_t *init, bool flag)
 			}
 		}
 		if(data_size > 0){
-			str = unstr_substr_char(getdata->data + header_size, data_size);
+			str = unstr_init_memory(data_size);
+			unstr_substr_char(str, getdata->data + header_size, data_size);
 		}
 	} else {
 		/* ダミー領域 */

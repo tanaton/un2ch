@@ -25,7 +25,7 @@
 #define UN2CH_THREAD_LENGTH				(15)
 #define UN2CH_THREAD_INDEX_LENGTH		(4)
 #define UN2CH_THREAD_NUMBER_LENGTH		(11)
-#define UN2CH_TCP_IP_FRAME_SIZE			(40960)
+#define UN2CH_TCP_IP_FRAME_SIZE			(1024)
 #define UN2CH_BOURBON_LIMIT				(255)
 
 #define un2ch_free(data)				\
