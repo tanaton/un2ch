@@ -546,11 +546,6 @@ static unstr_t* create_date_query(nich_t *nich, size_t res_no, unstr_t *data)
 			match[4],
 			match[5]
 		);
-	} else { /* Miss match or error */
-		UChar s[ONIG_MAX_ERROR_MESSAGE_LEN];
-		onig_error_code_to_str(s, ret);
-		printf("ERROR: %s\n", s);
-		return NULL;
 	}
 	onig_region_clear(region);
 	onig_region_free(region, 1);
@@ -580,9 +575,6 @@ static int get_board_no_query(nich_t *nich, MYSQL *mysql)
 			board_no = strtol(row[0], NULL, 10);
 		}
 		mysql_free_result(res);
-	} else {
-		printf("%s\n", query->data);
-		printf("板番号取得失敗 %s\n", nich->board->data);
 	}
 	unstr_free(query);
 	return board_no;
