@@ -4,7 +4,7 @@ FAVOPROGRAM = favo2ch
 NOFAVOPROGRAM = nofavo2ch
 CC = gcc
 LINKER = gcc
-CFLAGS = -g -Wall -I/usr/local/mysql/include/ -I/opt/local/include/
+CFLAGS = -O2 -Wall -I/usr/local/mysql/include/ -I/opt/local/include/
 X = -lcurl -lpthread -lunmap -lunstring
 RM = rm -rf
 
