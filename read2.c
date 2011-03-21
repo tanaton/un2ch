@@ -39,7 +39,7 @@ static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_onig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool g_stop_flag = false;
 static mysql_config_t g_mysql_config;
-static char *g_pattern = "(\\d{4})\\/(\\d{2})\\/(\\d{2}).*(\\d{2}):(\\d{2}):(\\d{2})";
+static char *g_pattern = "^.*?<>.*?<>.*?(\\d{4})\\/(\\d{2})\\/(\\d{2}).*(\\d{2}):(\\d{2}):(\\d{2})";
 
 int main(void)
 {
@@ -316,8 +316,7 @@ static void get_thread(un2ch_t *get, unarray_t *tl, int board_no, MYSQL *mysql)
 			}
 		}
 		nich = NULL;
-		unstr_free(moto);
-		unstr_free(data);
+		unstr_delete(2, moto, data);
 		/* 4秒止める */
 		sleep(4);
 	}
@@ -451,8 +450,7 @@ static void set_mysql_res(unstr_t *data, unstr_t *moto, nich_t *nich, MYSQL *mys
 	search = unstr_init("\n");
 	if(moto == NULL){
 		str = unstr_copy(data);
-		array = unstr_quick_search(str, search, &res_no);
-		set_mysql_res_query(str, nich, res_no, mysql);
+		set_mysql_res_query(str, nich, 0, mysql);
 	} else {
 		moto_len = unstr_strlen(moto);
 		if(unstr_strlen(data) > (moto_len + 1)){
@@ -462,7 +460,7 @@ static void set_mysql_res(unstr_t *data, unstr_t *moto, nich_t *nich, MYSQL *mys
 		}
 	}
 	free(array);
-	unstr_free(str);
+	unstr_delete(2, str, search);
 }
 
 static void set_mysql_res_query(unstr_t *data, nich_t *nich, size_t res_no, MYSQL *mysql)
@@ -470,9 +468,6 @@ static void set_mysql_res_query(unstr_t *data, nich_t *nich, size_t res_no, MYSQ
 	unstr_t *tmp_query = 0;
 	unstr_t *query = unstr_init("INSERT INTO restime (board_id,thread,number,date) VALUES");
 	unstr_t *line = 0;
-	unstr_t *p1 = unstr_init_memory(128);
-	unstr_t *p2 = unstr_init_memory(128);
-	unstr_t *p3 = unstr_init_memory(128);
 	unarray_t *list = unarray_init(128);
 	size_t index = 0;
 	size_t i = 0;
@@ -480,11 +475,9 @@ static void set_mysql_res_query(unstr_t *data, nich_t *nich, size_t res_no, MYSQ
 	line = unstr_strtok(data, "\n", &index);
 	while(line != NULL){
 		res_no++;
-		if(unstr_sscanf(line, "$<>$<>$<>", p1, p2, p3) == 3){
-			tmp_query = create_date_query(nich, res_no, p3);
-			if(tmp_query != NULL){
-				unarray_push(list, tmp_query);
-			}
+		tmp_query = create_date_query(nich, res_no, line);
+		if(tmp_query != NULL){
+			unarray_push(list, tmp_query);
 		}
 		unstr_free(line);
 		line = unstr_strtok(data, "\n", &index);
@@ -501,7 +494,7 @@ static void set_mysql_res_query(unstr_t *data, nich_t *nich, size_t res_no, MYSQ
 			printf("mysql挿入数:%d\n", (int)list->length);
 		}
 	}
-	unstr_delete(5, query, line, p1, p2, p3);
+	unstr_delete(2, query, line);
 	unarray_free(list, (void (*)(void *))unstr_free_func);
 }
 
@@ -582,7 +575,7 @@ static int get_board_no_query(nich_t *nich, MYSQL *mysql)
 
 static void set_board_no_query(nich_t *nich, MYSQL *mysql)
 {
-	unstr_t *query = unstr_sprintf(NULL, "INSERT INTO boardlist (board) VALUES(%$)", nich->board);
+	unstr_t *query = unstr_sprintf(NULL, "INSERT INTO boardlist (board) VALUES('%$')", nich->board);
 	mysql_query(mysql, query->data);
 }
 
