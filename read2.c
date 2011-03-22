@@ -1,36 +1,32 @@
 #include <pthread.h>
 #include <mysql.h>
-#include <string.h>
-#include <unistd.h>
+#include <oniguruma.h>
 #include <unmap.h>
 #include <unstring.h>
+#include <string.h>
+#include <unistd.h>
 #include "un2ch.h"
 #include "unarray.h"
 #include "read2.h"
 
-typedef struct mysql_config_st {
-	unstr_t *host;
-	unstr_t *user;
-	unstr_t *db;
-	unstr_t *passwd;
-	unsigned int port;
-	unstr_t *unix_socket;
-	unsigned long client_flag;
-} mysql_config_t;
-
 static void *unmalloc(size_t size);
 static void sl_free(void *data);
 static void nich_free(void *p);
-static unmap_t *get_server(bool flag);
+static void get_read2ch_config(int argc, char *argv[], read2ch_config_t *conf);
+static void read2ch_config_free(read2ch_config_t *conf);
+static unmap_t *get_board_data(unstr_t *path);
+static unmap_t *get_server(read2ch_config_t *conf);
+static void push_board(unmap_t *hash, const unstr_t *server, const unstr_t *board);
 static unarray_t *get_board(un2ch_t *get, nich_t *nich);
 static unmap_t *get_board_res(unstr_t *filename);
 static void get_thread(un2ch_t *get, unarray_t *tl, int board_no, MYSQL *mysql);
 static void *mainThread(void *data);
 static void retryThread(databox_t *databox);
-static void get_mysql_config(mysql_config_t *m);
+static void get_mysql_config(mysql_config_t *m, unstr_t *path);
+static void mysql_config_free(mysql_config_t *m);
 static void set_mysql_res(unstr_t *data, unstr_t *moto, nich_t *nich, MYSQL *mysql);
 static void set_mysql_res_query(unstr_t *data, nich_t *nich, size_t res_no, MYSQL *mysql);
-static unstr_t* create_date_query(nich_t *nich, size_t res_no, unstr_t *data);
+static unstr_t* create_date_query(const nich_t *nich, size_t res_no, const unstr_t *data);
 static int get_board_no(nich_t *nich, MYSQL *mysql);
 static int get_board_no_query(nich_t *nich, MYSQL *mysql);
 static void set_board_no_query(nich_t *nich, MYSQL *mysql);
@@ -38,19 +34,22 @@ static void set_board_no_query(nich_t *nich, MYSQL *mysql);
 static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_onig_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool g_stop_flag = false;
-static mysql_config_t g_mysql_config;
+static read2ch_config_t g_conf;
 static char *g_pattern = "^.*?<>.*?<>.*?(\\d{4})\\/(\\d{2})\\/(\\d{2}).*(\\d{2}):(\\d{2}):(\\d{2})";
 
-int main(void)
+int main(int argc, char *argv[])
 {
 	pthread_t tid;
-	unmap_t *sl = get_server(false);
+	unmap_t *sl = 0;
 	databox_t *databox = 0;
 	nich_t *nich = 0;
 	unarray_t *ar = 0;
-	size_t sl_len = unmap_size(sl);
+	size_t sl_len = 0;
 	size_t i = 0;
-	get_mysql_config(&g_mysql_config);
+
+	get_read2ch_config(argc, argv, &g_conf);
+	sl = get_server(&g_conf);
+	sl_len = unmap_size(sl);
 
 	for(i = 0; i < sl_len; i++){
 		ar = unmap_at(sl, i);
@@ -61,6 +60,7 @@ int main(void)
 				databox = unmalloc(sizeof(databox_t));
 				databox->bl = ar;
 				databox->key = unstr_copy(nich->server);
+				databox->conf = &g_conf;
 				if(pthread_create(&tid, NULL, mainThread, databox)){
 					unstr_free(databox->key);
 					free(databox);
@@ -82,15 +82,8 @@ int main(void)
 		pthread_mutex_unlock(&g_mutex);
 		sleep(600);
 	}
-	unstr_delete(
-		5,
-		g_mysql_config.host,
-		g_mysql_config.user,
-		g_mysql_config.db,
-		g_mysql_config.passwd,
-		g_mysql_config.unix_socket
-	);
-	/* unmap_free(sl, sl_free); */
+	read2ch_config_free(&g_conf);
+	unmap_free(sl, sl_free);
 	return 0;
 }
 
@@ -120,54 +113,133 @@ static void nich_free(void *p)
 	free(nich);
 }
 
-static unmap_t *get_server(bool flag)
+static void get_read2ch_config(int argc, char *argv[], read2ch_config_t *conf)
+{
+	int result = 0;
+	unstr_t *strtmp = unstr_init_memory(128);
+	conf->type = READ2CH_NORMAL;
+	while((result = getopt(argc, argv, "fnc:m:")) != -1){
+		switch(result){
+		case 'f':
+			conf->type = READ2CH_FAVO;
+			break;
+		case 'n':
+			conf->type = READ2CH_NOFAVO;
+			break;
+		case 'c':
+			unstr_free(conf->favolist_path);
+			conf->favolist_path = unstr_init(optarg);
+			break;
+		case 'm':
+			unstr_strcpy_char(strtmp, optarg);
+			get_mysql_config(&(conf->mysql_config), strtmp);
+			break;
+		}
+	}
+	if(conf->favolist_path == NULL){
+		conf->favolist_path = unstr_init(READ2CH_GET_BOARD_PATH);
+	}
+	if(conf->mysql_config.host == NULL){
+		unstr_strcpy_char(strtmp, READ2CH_MYSQL_CONF_PATH);
+		get_mysql_config(&(conf->mysql_config), strtmp);
+	}
+	unstr_free(strtmp);
+}
+
+static void read2ch_config_free(read2ch_config_t *conf)
+{
+	unstr_free(conf->favolist_path);
+	mysql_config_free(&(conf->mysql_config));
+}
+
+static unmap_t *get_board_data(unstr_t *path)
+{
+	size_t index = 0;
+	size_t length = 0;
+	unmap_t *map = unmap_init(16);
+	unstr_t *line = 0;
+	unstr_t *data = unstr_file_get_contents(path);
+	line = unstr_strtok(data, "\n", &index);
+	while(line != NULL){
+		length = unstr_strlen(line);
+		if(length != 0){
+			unstr_free_func(unmap_find(map, line->data, length));
+			unmap_set(map, line->data, length, unstr_copy(line));
+		}
+		unstr_free(line);
+		line = unstr_strtok(data, "\n", &index);
+	}
+	unstr_delete(2, line, data);
+	return map;
+}
+
+static unmap_t *get_server(read2ch_config_t *conf)
 {
 	unmap_t *hash = 0;
+	unmap_t *board_map = 0;
 	un2ch_t *get = un2ch_init();
-	unarray_t *list = 0;
-	nich_t *nich = 0;
 	unstr_t *bl = 0;
 	unstr_t *line = 0;
 	unstr_t *server = 0;
 	unstr_t *board = 0;
 	size_t index = 0;
-	bool ok = un2ch_get_server(get);
+	
+	/* 板一覧の更新確認 */
+	un2ch_get_server(get);
 
-	if(flag && (ok == false)){
-		un2ch_free(get);
-		return NULL;
-	}
 	bl = unstr_file_get_contents(get->board_list);
 	if(bl == NULL){
 		un2ch_free(get);
 		perror("板一覧ファイルが無いよ。\n");
 	}
+	board_map = get_board_data(conf->favolist_path);
 	hash = unmap_init(16);
 	server = unstr_init_memory(32);
 	board = unstr_init_memory(32);
 	line = unstr_strtok(bl, "\n", &index);
 	while(line != NULL){
 		if(unstr_sscanf(line, "$/$<>", server, board) == 2){
-			nich = unmalloc(sizeof(nich_t));
-			nich->server = unstr_copy(server);
-			nich->board = unstr_copy(board);
-			nich->thread = NULL;
-			list = unmap_find(hash, server->data, server->length);
-			if(list == NULL){
-				list = unarray_init(32);
-				unarray_push(list, nich);
-				unmap_set(hash, server->data, server->length, list);
-			} else {
-				unarray_push(list, nich);
+			switch(conf->type){
+			case READ2CH_NORMAL:
+				push_board(hash, server, board);
+				break;
+			case READ2CH_FAVO:
+				if(unmap_find(board_map, board->data, unstr_strlen(board)) != NULL){
+					push_board(hash, server, board);
+				}
+				break;
+			case READ2CH_NOFAVO:
+				if(unmap_find(board_map, board->data, unstr_strlen(board)) == NULL){
+					push_board(hash, server, board);
+				}
+				break;
 			}
-			/* listは開放しない */
 		}
 		unstr_free(line);
 		line = unstr_strtok(bl, "\n", &index);
 	}
 	unstr_delete(4, bl, line, server, board);
+	unmap_free(board_map, (void (*)(void *))unstr_free_func);
 	un2ch_free(get);
 	return hash;
+}
+
+static void push_board(unmap_t *hash, const unstr_t *server, const unstr_t *board)
+{
+	unarray_t *list = 0;
+	nich_t *nich = unmalloc(sizeof(nich_t));
+	nich->server = unstr_copy(server);
+	nich->board = unstr_copy(board);
+	nich->thread = NULL;
+	list = unmap_find(hash, server->data, server->length);
+	if(list == NULL){
+		list = unarray_init(32);
+		unarray_push(list, nich);
+		unmap_set(hash, server->data, server->length, list);
+	} else {
+		unarray_push(list, nich);
+	}
+	/* listは開放しない */
 }
 
 static unarray_t *get_board(un2ch_t *get, nich_t *nich)
@@ -329,25 +401,28 @@ static void *mainThread(void *data)
 {
 	un2ch_t *get = 0;
 	databox_t *databox = (databox_t *)data;
+	mysql_config_t *m = &(databox->conf->mysql_config);
 	unarray_t *bl = databox->bl;
 	unarray_t *tl = 0;
 	nich_t *nich = 0;
 	size_t i = 0;
 	int board_no = 0;
-	MYSQL *mysql;
+	MYSQL *mysql = 0;
 	/* スレッドを親から切り離す */
 	pthread_detach(pthread_self());
-	if((mysql = mysql_init(NULL)) != NULL){
-		mysql_real_connect(
-			mysql,
-			g_mysql_config.host->data,
-			g_mysql_config.user->data,
-			g_mysql_config.passwd->data,
-			g_mysql_config.db->data,
-			g_mysql_config.port,
-			NULL,
-			0
-		);
+	if(m->host && m->user && m->passwd && m->db){
+		if((mysql = mysql_init(NULL)) != NULL){
+			mysql_real_connect(
+				mysql,
+				m->host->data,
+				m->user->data,
+				m->passwd->data,
+				m->db->data,
+				m->port,
+				NULL,
+				0
+			);
+		}
 	}
 	get = un2ch_init();
 	/* get->bourbon = true; */
@@ -375,12 +450,14 @@ static void *mainThread(void *data)
 static void retryThread(databox_t *databox)
 {
 	pthread_t tid;
-	unmap_t *nsl = 0;
+	un2ch_t *get = 0;
+	bool ok = false;
 	/* ロック */
 	pthread_mutex_lock(&g_mutex);
-	nsl = get_server(true);
-	if((nsl == NULL) && (g_stop_flag == false)){
-		/* スレッド作成 */
+	get = un2ch_init();
+	ok = un2ch_get_server(get);
+	if((ok == false) && (g_stop_flag == false)){
+		/* 板一覧に更新が無い場合スレッド作成 */
 		if(pthread_create(&tid, NULL, mainThread, databox)){
 			printf("%s スレッド生成エラー\n", databox->key->data);
 			unstr_free(databox->key);
@@ -391,28 +468,23 @@ static void retryThread(databox_t *databox)
 		unstr_free(databox->key);
 		free(databox);
 		g_stop_flag = true;
-		unmap_free(nsl, sl_free);
 	}
+	un2ch_free(get);
 	/* ロック解除 */
 	pthread_mutex_unlock(&g_mutex);
 }
 
-static void get_mysql_config(mysql_config_t *m)
+static void get_mysql_config(mysql_config_t *m, unstr_t *path)
 {
-	unstr_free(m->host);
-	unstr_free(m->user);
-	unstr_free(m->db);
-	unstr_free(m->passwd);
-	m->port = 0;
-	unstr_free(m->unix_socket);
-	m->client_flag = 0;
-
-	unstr_t *filename = unstr_init("./un2ch.conf");
-	unstr_t *data = unstr_file_get_contents(filename);
+	unstr_t *data = unstr_file_get_contents(path);
 	unstr_t *line = 0;
 	unstr_t *p1 = unstr_init_memory(32);
 	unstr_t *p2 = unstr_init_memory(32);
 	size_t index = 0;
+
+	mysql_config_free(m);
+	m->port = 0;
+	m->client_flag = 0;
 
 	line = unstr_strtok(data, "\n", &index);
 	while(line != NULL){
@@ -436,7 +508,19 @@ static void get_mysql_config(mysql_config_t *m)
 		unstr_free(line);
 		line = unstr_strtok(data, "\n", &index);
 	}
-	unstr_delete(5, filename, data, p1, p2, line);
+	unstr_delete(4, data, p1, p2, line);
+}
+
+static void mysql_config_free(mysql_config_t *m)
+{
+	unstr_delete(
+		5,
+		m->host,
+		m->user,
+		m->db,
+		m->passwd,
+		m->unix_socket
+	);
 }
 
 static void set_mysql_res(unstr_t *data, unstr_t *moto, nich_t *nich, MYSQL *mysql)
@@ -498,15 +582,16 @@ static void set_mysql_res_query(unstr_t *data, nich_t *nich, size_t res_no, MYSQ
 	unarray_free(list, (void (*)(void *))unstr_free_func);
 }
 
-static unstr_t* create_date_query(nich_t *nich, size_t res_no, unstr_t *data)
+static unstr_t* create_date_query(const nich_t *nich, size_t res_no, const unstr_t *data)
 {
 	OnigRegion *region = onig_region_new();
-	unstr_t *match[6] = {0};
+	unstr_t *strtmp = 0;
 	unstr_t *query = 0;
 	UChar *start;
 	UChar *end;
 	UChar *range;
-	int ret;
+	int ret = -1;
+	int i = 0;
 
 	end = (UChar *)(data->data + unstr_strlen(data));
 	start = (UChar *)(data->data);
@@ -514,35 +599,17 @@ static unstr_t* create_date_query(nich_t *nich, size_t res_no, unstr_t *data)
 
 	ret = onig_search(nich->reg, (UChar *)data->data, end, start, range, region, ONIG_OPTION_NONE);
 	if(ret >= 0){
-		match[0] = unstr_init_memory(8);
-		match[1] = unstr_init_memory(8);
-		match[2] = unstr_init_memory(8);
-		match[3] = unstr_init_memory(8);
-		match[4] = unstr_init_memory(8);
-		match[5] = unstr_init_memory(8);
-		unstr_substr_char(match[0], data->data + region->beg[1], region->end[1] - region->beg[1]);
-		unstr_substr_char(match[1], data->data + region->beg[2], region->end[2] - region->beg[2]);
-		unstr_substr_char(match[2], data->data + region->beg[3], region->end[3] - region->beg[3]);
-		unstr_substr_char(match[3], data->data + region->beg[4], region->end[4] - region->beg[4]);
-		unstr_substr_char(match[4], data->data + region->beg[5], region->end[5] - region->beg[5]);
-		unstr_substr_char(match[5], data->data + region->beg[6], region->end[6] - region->beg[6]);
-		query = unstr_sprintf(
-			NULL,
-			"(%d,%$,%d,'%$%$%$%$%$%$')",
-			nich->board_no,
-			nich->thread,
-			res_no,
-			match[0],
-			match[1],
-			match[2],
-			match[3],
-			match[4],
-			match[5]
-		);
+		strtmp = unstr_init_memory(8);
+		query = unstr_sprintf(NULL, "(%d,%$,%d,'", nich->board_no, nich->thread, res_no);
+		for(i = 1; i < region->num_regs; i++){
+			unstr_substr_char(strtmp, data->data + region->beg[i], region->end[i] - region->beg[i]);
+			unstr_strcat(query, strtmp);
+		}
+		unstr_strcat_char(query, "')");
 	}
 	onig_region_clear(region);
 	onig_region_free(region, 1);
-	unstr_delete(6, match[0], match[1], match[2], match[3], match[4], match[5]);
+	unstr_free(strtmp);
 	return query;
 }
 
