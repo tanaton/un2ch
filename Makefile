@@ -5,10 +5,10 @@ NOFAVOPROGRAM = nofavo2ch
 CC = gcc
 LINKER = gcc
 CFLAGS = -O2 -Wall -I/usr/local/mysql/include/ -I/opt/local/include/
-X = -lcurl -lpthread -lunmap -lunstring
+X = -lcurl -lpthread -lunmap -lunstring -lunarray
 RM = rm -rf
 
-SRCS = un2ch.c unarray.c
+SRCS = un2ch.c
 OBJS = $(SRCS:.c=.o)
 READSRCS = read.c
 READOBJS = $(READSRCS:.c=.o)

@@ -485,12 +485,10 @@ static size_t returned_data(void *ptr, size_t size, size_t nmemb, void *data)
 {
 	size_t length = size * nmemb;
 	unstr_t *sfer = (unstr_t *)data;
-	if((sfer->length + length + 1) >= sfer->heap){
-		unstr_alloc(sfer, length << 1);
-	}
-	memcpy(&(sfer->data[sfer->length]), ptr, length);
-	sfer->length += length;
-	sfer->data[sfer->length] = '\0';
+	unstr_t *strtmp = unstr_init_memory(length + 2);
+	unstr_substr_char(strtmp, ptr, length);
+	unstr_strcat(sfer, strtmp);
+	unstr_free(strtmp);
 	return length;
 }
 

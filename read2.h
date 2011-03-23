@@ -3,7 +3,7 @@
 
 #include <oniguruma.h>
 #include <unstring.h>
-#include "unarray.h"
+#include <unarray.h>
 
 #define READ2CH_GET_BOARD_PATH	("/2ch/getboard.data")
 #define READ2CH_MYSQL_CONF_PATH	("./un2ch.conf")
