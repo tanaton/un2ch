@@ -485,10 +485,7 @@ static size_t returned_data(void *ptr, size_t size, size_t nmemb, void *data)
 {
 	size_t length = size * nmemb;
 	unstr_t *sfer = (unstr_t *)data;
-	unstr_t *strtmp = unstr_init_memory(length + 2);
-	unstr_substr_char(strtmp, ptr, length);
-	unstr_strcat(sfer, strtmp);
-	unstr_free(strtmp);
+	unstr_write(sfer, ptr, unstr_strlen(sfer), length);
 	return length;
 }
 
