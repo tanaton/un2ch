@@ -428,9 +428,8 @@ bool un2ch_get_server(un2ch_t *init)
 	p2 = unstr_init_memory(UN2CH_CHAR_LENGTH);
 	p3 = unstr_init_memory(UN2CH_CHAR_LENGTH);
 	unstr_strcpy(tmp, line);
-	list = unstr_strtok(tmp, "\n", &index);
 	unstr_zero(line);
-	while(list != NULL){
+	while((list = unstr_strtok(tmp, "\n", &index)) != NULL){
 		if(unstr_sscanf(list, "<B>$</B>", p1) == 1){
 			if(!in_array(p1->data, filter, UN2CH_G_SABAFILTER_SIZE)){
 				/* 書き込む */
@@ -448,7 +447,6 @@ bool un2ch_get_server(un2ch_t *init)
 			}
 		}
 		unstr_free(list);
-		list = unstr_strtok(tmp, "\n", &index);
 	}
 	unstr_file_put_contents(init->board_list, line, "w");
 	unstr_delete(7, list, tmp, line, writedata, p1, p2, p3);
