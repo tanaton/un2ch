@@ -493,8 +493,7 @@ unstr_t* un2ch_get_board_name(un2ch_t *init)
 	unstr_t *url = 0;
 	unstr_t *title = 0;
 	unstr_t *data = 0;
-	unstr_t *set = unstr_sprintf(NULL, "%$/%$/setting.txt",
-		init->folder, init->board);
+	unstr_t *set = unstr_sprintf(NULL, "%$/%$/setting.txt", init->folder, init->board);
 	time_t times = time(NULL);
 	time_t mod = 0;
 	struct stat st;
